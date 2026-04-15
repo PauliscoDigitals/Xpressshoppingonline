@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About Us | ShopEasy</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
+  <!-- AOS Animate on Scroll -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+  <style>
+    :root {
+      --primary-color: blue;
+      --accent-color: #160be4;
+      --bg-color: #f9f9f9;
+      --text-color: #333;
+      --card-bg: #fff;
+    }
+
+    [data-theme="dark"] {
+      --primary-color: #111;
+      --accent-color: #4caf50;
+      --bg-color: #1c1c1c;
+      --text-color: #eee;
+      --card-bg: #2c2c2c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    header {
+      background-color: var(--primary-color);
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .section-title {
+      text-align: center;
+      margin: 40px 0 20px;
+    }
+
+    .about-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .about-text, .about-image {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .about-image img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .values-list, .team, .timeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .card h3 {
+      color: var(--accent-color);
+      margin-bottom: 10px;
+    }
+
+    .team-member img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .timeline-item {
+      border-left: 4px solid var(--accent-color);
+      padding-left: 15px;
+    }
+
+    footer {
+      background-color: var(--primary-color);
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+      margin-top: 40px;
+    }
+
+    .socials a {
+      margin: 0 10px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 1.5rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    form input, form textarea {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-family: inherit;
+    }
+
+    form button {
+      padding: 10px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .toggle-darkmode {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 12px;
+      border: none;
+      background-color: var(--accent-color);
+      color: white;
+      border-radius: 20px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <button class="toggle-darkmode" onclick="toggleDarkMode()">🌙 Toggle Dark Mode</button>
+
+  <header>
+    <h1>About Us</h1>
+    <p>Learn more about who we are and what drives us at Xpress Shopping</p>
+  </header>
+
+  <div class="container">
+    <!-- About Section -->
+    <section class="about-content" data-aos="fade-up">
+      <div class="about-text">
+        <h2>Welcome to Xpress Shopping Nigeria</h2>
+        <p>
+          We’re redefining the online shopping experience. Since our founding in 2024, our mission has been to make shopping simple, safe, and enjoyable.
+        </p>
+        <p>
+          From humble beginnings to a trusted platform with thousands of customers, our team works tirelessly to bring you the best products at unbeatable prices.
+        </p>
+      </div>
+      <div class="about-image">
+        <img src="file:///C:/Users/EDIDIONG%20UKPONG/Pictures/New%20folder/mercedes%20-%20Copy.jpg" alt="About Xpress Shopping">
+      </div>
+    </section>
+
+    <!-- Values -->
+    <section data-aos="fade-up">
+      <div class="section-title"><h2>Our Values</h2></div>
+      <div class="values-list">
+        <div class="card">
+          <h3>Customer First</h3>
+          <p>We put our customers at the center of every step we take.</p>
+        </div>
+        <div class="card">
+          <h3>Innovation</h3>
+          <p>We are always improving and evolving our platform.</p>
+        </div>
+        <div class="card">
+          <h3>Integrity</h3>
+          <p>We build trust through transparency and honesty.</p>
+        </div>
+        <div class="card">
+          <h3>Community</h3>
+          <p>We support local businesses and create opportunities.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline -->
+    <section data-aos="fade-up">
+      <div class="section-title"><h2>Our Journey</h2></div>
+      <div class="timeline">
+        <div class="card timeline-item">
+          <h3>2020</h3>
+          <p>Xpress Shopping was founded with the goal of simplifying e-commerce.</p>
+        </div>
+        <div class="card timeline-item">
+          <h3>2021</h3>
+          <p>Launched our first mobile app with 10k+ downloads in 3 months.</p>
+        </div>
+        <div class="card timeline-item">
+          <h3>2022</h3>
+          <p>Partnered with 200+ local vendors and expanded to new regions.</p>
+        </div>
+        <div class="card timeline-item">
+          <h3>2024</h3>
+          <p>Reached 1 million active users and launched global shipping.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team -->
+    <section data-aos="fade-up">
+      <div class="section-title"><h2>Meet the Team</h2></div>
+      <div class="team">
+        <div class="card team-member">
+          <img src="https://source.unsplash.com/200x200/?man,ceo" alt="CEO">
+          <h3>Paul Udofia</h3>
+          <p>Founder & CEO</p>
+        </div>
+        <div class="card team-member">
+          <img src="https://source.unsplash.com/200x200/?woman,manager" alt="COO">
+          <h3>Kion Van</h3>
+          <p>Chief Operating Officer</p>
+        </div>
+        <div class="card team-member">
+          <img src="https://source.unsplash.com/200x200/?developer,person" alt="CTO">
+          <h3>Paul Udofia</h3>
+          <p>Chief Technology Officer</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section data-aos="fade-up">
+      <div class="section-title"><h2>Get In Touch</h2></div>
+      <form>
+        <input type="text" placeholder="Your Name" required />
+        <input type="email" placeholder="Your Email" required />
+        <textarea rows="5" placeholder="Your Message"></textarea>
+        <button type="submit">Send Enquiry Message</button>
+      </form>
+    </section>
+  </div>
+
+  <footer>
+    <div class="socials">
+      <a href="#" title="Facebook">📘</a>
+      <a href="#" title="Instagram">📸</a>
+      <a href="#" title="Twitter">🐦</a>
+      <a href="#" title="LinkedIn">💼</a>
+    </div>
+    <p>&copy; 2025 ShopEasy. All rights reserved.</p>
+  </footer>
+
+  <!-- AOS Library -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init();
+
+    function toggleDarkMode() {
+      const theme = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', theme === 'dark' ? 'light' : 'dark');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Xpress Shopping</title>
+  <style>
+    /* CSS VARIABLES FOR EASY COLOR THEMING */
+    :root {
+      --primary: #1e40af;
+      --secondary: #2563eb;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --light: #f4f7ff;
+      --dark: #1e3a8a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--light);
+      color: #333;
+      padding-bottom: 80px; /* Space for fixed footer */
+    }
+
+    /* STICKY HEADER & SEARCH */
+    header {
+      background-color: var(--primary);
+      color: white;
+      padding: 15px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .search-container {
+        margin: 10px auto;
+        max-width: 500px;
+        display: flex;
+    }
+
+    .search-container input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+    }
+
+    /* NAVIGATION & BUTTONS */
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .nav-btn {
+      padding: 8px 15px; 
+      background-color: white; 
+      color: var(--primary); 
+      border: none; 
+      border-radius: 20px; 
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .nav-btn:hover {
+      background-color: #e0e7ff;
+      transform: translateY(-2px);
+    }
+
+    #cart-count {
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 10px;
+        margin-left: 5px;
+    }
+
+    /* PRODUCT CARDS */
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    #products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 25px;
+    }
+
+    .product {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: 0.3s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .product:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .product img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      cursor: zoom-in;
+    }
+
+    .product h3 { margin-bottom: 8px; font-size: 1.1rem; }
+    .product p { color: #666; font-size: 0.9rem; margin-bottom: 10px; }
+    .price { font-size: 1.2rem; color: var(--primary); font-weight: bold; }
+
+    /* CATEGORIES BAR */
+    .categories {
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      scrollbar-width: none; /* Hide scrollbar Firefox */
+    }
+    .categories::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome */
+
+    .category-btn {
+      padding: 8px 18px;
+      background-color: #fff;
+      color: var(--secondary);
+      border: 1px solid var(--secondary);
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .category-btn.active {
+      background-color: var(--secondary);
+      color: white;
+    }
+
+    /* MODALS */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+      background-color: #fff;
+      margin: 5% auto;
+      padding: 25px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .close { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; }
+
+    footer {
+      background-color: var(--primary);
+      color: white;
+      text-align: center;
+      padding: 20px 0;
+      position: relative;
+      margin-top: 50px;
+    }
+    /* Navigation Container */
+#nav-auth-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* Allows items to wrap on small mobile screens */
+}
+
+/* Styled Navigation "Boxes" */
+.btn-nav {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-nav:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+/* The User Badge Styling */
+#userBadge {
+    display: none; 
+    align-items: center;
+    gap: 10px;
+    background: #1e3a8a; /* Darker blue for contrast */
+    padding: 6px 12px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    max-width: 200px;
+}
+
+#userBadge span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Prevents long emails from breaking the layout */
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    #userBadge {
+        padding: 4px 8px;
+    }
+    #userStatus {
+        display: none; /* Hide "Verified Customer" text on tiny screens to save space */
+    }
+    .btn-nav {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+    /* Utility classes */
+    .btn-main { background: var(--secondary); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+    .btn-main:hover { background: var(--dark); }
+  </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <div id="hamburger" style="cursor:pointer; font-size: 24px;">&#9776;</div>
+        <h1>Xpress Shopping</h1>
+        <div style="width: 24px;"></div> </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search products..." onkeyup="searchProducts()">
+    </div>
+    <div id="nav-auth-group" style="display: flex; gap: 15px; align-items: center;">
+    <div id="userBadge" style="display: none; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px;">
+        <div style="width: 30px; height: 30px; background: #fff; color: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;" id="userInitial">
+            U
+        </div>
+        <div style="display: flex; flex-direction: column; line-height: 1;">
+            <span id="displayUsername" style="font-size: 0.85rem; font-weight: bold; color: white;">User</span>
+            <span id="userStatus" style="font-size: 0.7rem; color: #cbd5e1; margin-top: 2px;">Standard Profile</span>
+        </div>
+    </div>
+
+   
+</div>
+
+    <nav id="mainNav" style="display: none; position: absolute; top: 60px; left: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 100; text-align: left;">
+        <a href="#" onclick="showSection('shop')" style="display:block; padding: 12px 25px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">Home</a>
+        <a href="#" style="display:block; padding: 12px 25px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">Services</a>
+        <a href="#" style="display:block; padding: 12px 25px; color: #333; text-decoration: none;">About</a>
+    </nav>
+
+  <div id="nav-auth-group">
+    <button class="btn-nav" onclick="showSection('shop')">🛍️ Shop</button>
+    <button class="btn-nav" onclick="showSection('cart')">
+        🛒 Cart <span id="cart-badge" style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem;">0</span>
+    </button>
+    <button class="btn-nav" onclick="showSection('track')">📦 Track</button>
+
+    <div id="userBadge">
+        <div id="userInitial" style="width: 28px; height: 28px; background: white; color: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">
+            U
+        </div>
+        <div style="display: flex; flex-direction: column; overflow: hidden;">
+            <span id="displayUsername" style="font-size: 0.8rem; font-weight: bold; color: white;">User</span>
+            <span id="userStatus" style="font-size: 0.65rem; color: #93c5fd;">Customer</span>
+        </div>
+    </div>
+    <button class="btn-nav" id="ordersNavBtn" onclick="showSection('orders')" style="display:none;">📜 My Orders</button>
+
+    <button class="btn-nav" id="loginNavBtn" style="background: #2563eb; border: none; font-weight: bold;">Login</button>
+</div>
+</header>
+
+<div class="container">
+   <div id="shopSection">
+        <div class="categories">
+            <button class="category-btn active" onclick="filterProducts('all')">All</button>
+            <button class="category-btn" onclick="filterProducts('gadgets')">Gadgets</button>
+            <button class="category-btn" onclick="filterProducts('appliances')">Appliances</button>
+            <button class="category-btn" onclick="filterProducts('clothing')">Clothing</button>
+            <button class="category-btn" onclick="filterProducts('cosmetics')">Cosmetics</button>
+            <button class="category-btn" onclick="filterProducts('foods')">Foods</button>
+            <button class="category-btn" onclick="filterProducts('gym')">Gym</button>
+        </div>
+
+        <h2 style="margin-bottom: 20px;">Featured Products</h2>
+        <div id="products"></div>
+
+        <div style="text-align:center; margin-top: 40px;">
+            <button class="btn-main" style="max-width: 200px;" onclick="openModal('postModal')">Sell Your Goods</button>
+        </div>
+    </div>
+    
+    <div id="ordersSection" style="display:none; padding: 20px; max-width: 1000px; margin: auto;">
+    <h2 style="text-align:center; color: #1e40af; margin-bottom: 20px;">My Order History</h2>
+    <div id="orderHistoryContainer">
+        </div>
+</div>
+
+    <div id="cartSection" style="display:none;">
+        <h2 style="text-align: center; margin-bottom: 20px;">Your Shopping Cart</h2>
+        <div id="cartItems"></div>
+    </div>
+
+    <div id="trackSection" style="display:none; background: white; padding: 30px; border-radius: 12px;">
+        <h2>Track Your Order</h2>
+        <input type="text" id="orderIdInput" placeholder="Enter Order ID" style="width:100%; padding:12px; margin: 15px 0; border-radius: 8px; border: 1px solid #ddd;">
+        <button class="btn-main" onclick="trackOrder()">Locate Package</button>
+        <div id="trackResult" style="margin-top: 20px;"></div>
+    </div>
+
+    <div id="adminSection" style="display:none;">
+        <h2>Admin Approval Panel</h2>
+        <div style="overflow-x: auto; background: white; padding: 15px; border-radius: 10px; margin-top: 20px;">
+            <table id="postsTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #eee;">
+                        <th style="padding:10px;">ID</th>
+                        <th>Seller</th>
+                        <th>Title</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="viewModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('viewModal')">&times;</span>
+        <div id="viewContent"></div>
+    </div>
+</div>
+<div id="authModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; padding: 30px; border-radius: 15px;">
+        <span class="close" onclick="closeModal('authModal')">&times;</span>
+        
+        <div id="authContent">
+            <h2 id="authTitle" style="text-align: center; color: #1e40af; margin-bottom: 20px;">Login</h2>
+            
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">EMAIL ADDRESS</label>
+                    <input type="email" id="authEmail" placeholder="e.g. yourname@mail.com" required 
+                           style="width:100%; padding:12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 5px;">PASSWORD</label>
+                    <input type="password" id="authPassword" placeholder="••••••••" required 
+                           style="width:100%; padding:12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+                </div>
+                
+                <button type="submit" class="btn-main" id="authSubmitBtn" style="width: 100%; padding: 12px; font-size: 1rem;">
+                    Login
+                </button>
+            </form>
+            
+            <p style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: #666;">
+                <span id="authToggleText">Don't have an account?</span> 
+                <a href="javascript:void(0)" onclick="toggleAuthMode()" id="authLink" 
+                   style="color: #2563eb; font-weight: bold; text-decoration: none; margin-left: 5px;">
+                   Sign Up
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+<div id="postModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('postModal')">&times;</span>
+        <h3>List Your Product</h3>
+        <form id="postForm" style="margin-top: 15px;">
+            <input type="text" id="sellerName" placeholder="Your Name" required style="width:100%; padding:10px; margin-bottom:10px;">
+            <input type="text" id="postTitle" placeholder="Product Title" required style="width:100%; padding:10px; margin-bottom:10px;">
+            <select id="postCategory" style="width:100%; padding:10px; margin-bottom:10px;">
+                <option value="gadgets">Gadgets</option>
+                <option value="clothing">Clothing</option>
+                <option value="appliances">Appliances</option>
+            </select>
+            <input type="number" id="postPrice" placeholder="Price (₦)" required style="width:100%; padding:10px; margin-bottom:10px;">
+            <input type="text" id="postImage" placeholder="Image Link (URL)" required style="width:100%; padding:10px; margin-bottom:10px;">
+            <button type="submit" class="btn-main">Submit for Review</button>
+        </form>
+    </div>
+</div>
+<div id="checkoutModal" class="modal">
+    <div class="modal-content" style="max-width: 500px; border-radius: 15px; padding: 0; overflow: hidden;">
+        <div style="background: #1e40af; color: white; padding: 20px; text-align: center;">
+            <span class="close" onclick="closeModal('checkoutModal')" style="color: white; top: 15px;">&times;</span>
+            <h2 style="margin: 0; font-size: 1.2rem;">Secure Checkout</h2>
+            <p id="paymentTotal" style="margin: 5px 0 0; opacity: 0.9; font-weight: bold;">Total: ₦0</p>
+        </div>
+
+        <div style="padding: 25px;">
+            <form id="checkoutForm" onsubmit="handlePayment(event)">
+                <h4 style="margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 5px;">Shipping Information</h4>
+                <input type="text" id="custName" placeholder="Full Name" required style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+                <input type="text" id="custAddress" placeholder="Delivery Address" required style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+                <input type="tel" id="custPhone" placeholder="Phone Number (e.g. 080123...)" required style="width:100%; padding:12px; margin-bottom:20px; border:1px solid #ddd; border-radius:8px;">
+
+                <h4 style="margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 5px;">Payment Method</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <label style="border: 1px solid #2563eb; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; background: #eff6ff;">
+                        <input type="radio" name="payMethod" checked> 💳 Card
+                    </label>
+                    <label style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="radio" name="payMethod"> 🏦 Transfer
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-main" style="width: 100%; padding: 15px; font-size: 1rem; font-weight: bold;">
+                    Complete Payment
+                </button>
+            </form>
+
+            <div id="paymentLoading" style="display: none; text-align: center; padding: 40px 0;">
+                <div class="spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+                <h3 style="color: #1e40af;">Processing Transaction...</h3>
+                <p style="color: #64748b;">Please do not refresh the page.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style></div>
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<footer>
+    <p>&copy; 2026 Xpress Shopping. Fast. Secure.</p>
+    <p>Website created by Paulisco Digitals</p>
+</footer>
+<script>
+// 1. DATA INITIALIZATION (Variables must come first!)
+const products = [
+    { id: "p1", category: "gadgets", title: "Wireless Earbuds", description: "Premium noise cancellation.", price: 4500, image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400" },
+    { id: "p2", category: "appliances", title: "Microwave Oven", description: "Quick heating 700W tech.", price: 15000, image: "https://images.unsplash.com/photo-1574265353302-63081564b01a?auto=format&fit=crop&w=400" },
+    { id: "p3", category: "clothing", title: "Men's Denim Jacket", description: "Classic fit durable denim.", price: 5500, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" }
+];
+
+// Safety Reset: If LocalStorage is corrupted (Unexpected token error), this clears it
+try {
+    JSON.parse(localStorage.getItem("users"));
+} catch (e) {
+    console.warn("LocalStorage corrupted, clearing data...");
+    localStorage.clear();
+}
+
+let productPosts = JSON.parse(localStorage.getItem("productPosts")) || [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let orders = JSON.parse(localStorage.getItem("orders")) || [];
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+let isLoginMode = true; // This is now defined BEFORE any functions use it
+
+// 2. APP STARTUP
+window.onload = () => {
+    updateAuthUI();
+    renderProducts('All');
+    updateCartBadge();
+};
+
+// 3. AUTHENTICATION LOGIC
+function toggleAuthMode() {
+    isLoginMode = !isLoginMode;
+    
+    // Get elements safely
+    const title = document.getElementById("authTitle");
+    const submitBtn = document.getElementById("authSubmitBtn");
+    const toggleText = document.getElementById("authToggleText");
+    const link = document.getElementById("authLink");
+
+    if (title && submitBtn && toggleText && link) {
+        title.innerText = isLoginMode ? "Login" : "Create Account";
+        submitBtn.innerText = isLoginMode ? "Login" : "Sign Up";
+        toggleText.innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
+        link.innerText = isLoginMode ? "Sign Up" : "Login";
+    }
+}
+
+function handleAuth(e) {
+    e.preventDefault();
+    const email = document.getElementById("authEmail").value;
+    const password = document.getElementById("authPassword").value;
+
+    if (isLoginMode) {
+        const user = users.find(u => u.email === email && u.password === password);
+        if (user) {
+            currentUser = user;
+            finalizeLogin();
+        } else {
+            alert("Invalid email or password!");
+        }
+    } else {
+        if (users.find(u => u.email === email)) {
+            alert("Email already exists!");
+            return;
+        }
+        const newUser = { email, password, role: (email === 'admin@xpress.com' ? 'admin' : 'user') };
+        users.push(newUser);
+        localStorage.setItem("users", JSON.stringify(users));
+        currentUser = newUser;
+        finalizeLogin();
+    }
+}
+
+function finalizeLogin() {
+    localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    closeModal('authModal');
+    updateAuthUI();
+    renderProducts('All'); 
+    alert(`Welcome, ${currentUser.email}!`);
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem("currentUser");
+    updateAuthUI();
+    showSection('shop');
+}
+
+function updateAuthUI() {
+    const loginBtn = document.getElementById("loginNavBtn");
+    const userBadge = document.getElementById("userBadge");
+    const displayUsername = document.getElementById("displayUsername");
+    const userInitial = document.getElementById("userInitial");
+    const userStatus = document.getElementById("userStatus");
+
+    if (currentUser) {
+        // Logged In State
+        loginBtn.innerText = "Logout";
+        loginBtn.style.background = "#ef4444"; // Logout turns red
+        loginBtn.onclick = logout;
+
+        if (userBadge) {
+            userBadge.style.display = "flex";
+            // Set username to the part before the @ in the email
+            displayUsername.innerText = currentUser.email.split('@')[0];
+            userInitial.innerText = currentUser.email[0].toUpperCase();
+            userStatus.innerText = currentUser.role === 'admin' ? "Admin" : "Verified";
+        }
+        
+        // Admin Panel Button check
+        if (currentUser.role === 'admin' && !document.getElementById('adminNavBtn')) {
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'adminNavBtn';
+            adminBtn.className = 'btn-nav';
+            adminBtn.innerText = '⚙️ Admin';
+            adminBtn.onclick = () => showSection('admin');
+            document.getElementById('nav-auth-group').insertBefore(adminBtn, loginBtn);
+        }
+    } else {
+        // Logged Out State
+        loginBtn.innerText = "Login / Sign Up";
+        loginBtn.style.background = "#2563eb"; 
+        loginBtn.onclick = () => openModal('authModal');
+        
+        if (userBadge) userBadge.style.display = "none";
+        
+        const adminBtn = document.getElementById('adminNavBtn');
+        if (adminBtn) adminBtn.remove();
+    }
+    const ordersBtn = document.getElementById("ordersNavBtn");
+if (currentUser) {
+    if (ordersBtn) ordersBtn.style.display = "inline-flex";
+    // ... rest of your login logic
+} else {
+    if (ordersBtn) ordersBtn.style.display = "none";
+    // ... rest of your logout logic
+}
+}
+        // 3. Handle Admin Panel Button
+        if (currentUser.role === 'admin' && !document.getElementById('adminNavBtn')) {
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'adminNavBtn';
+            adminBtn.className = 'btn-nav';
+            adminBtn.innerText = 'Admin Panel';
+            adminBtn.onclick = () => showSection('admin');
+            document.getElementById('nav-auth-group').appendChild(adminBtn);
+        }
+    else {
+        // User is Logged Out
+        loginBtn.innerText = "Login / Sign Up";
+        loginBtn.style.background = ""; // Reset color
+        loginBtn.onclick = () => openModal('authModal');
+        
+        if (userBadge) userBadge.style.display = "none";
+        
+        const adminBtn = document.getElementById('adminNavBtn');
+        if (adminBtn) adminBtn.remove();
+    }
+
+// 4. SHOP & PRODUCT LOGIC
+function renderProducts(filter = 'All') {
+    // Looks for both common ID names to prevent errors
+    const grid = document.getElementById("productGrid") || document.getElementById("products");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const allItems = [...products, ...productPosts.filter(p => p.status === "approved")];
+    const filtered = filter === 'All' ? allItems : allItems.filter(p => p.category.toLowerCase() === filter.toLowerCase());
+
+    filtered.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "product"; 
+        card.innerHTML = `
+            <img src="${p.image}" alt="${p.title}" onclick="quickView('${p.id}')" style="cursor:pointer; width:100%; border-radius:8px;">
+            <div style="padding:10px;">
+                <h3 style="margin:5px 0;">${p.title}</h3>
+                <p style="font-size:0.9rem; color:#666;">${p.description}</p>
+                <p class="price" style="font-weight:bold; color:#1e40af;">₦${p.price.toLocaleString()}</p>
+                <button class="btn-main" onclick="addToCart('${p.id}')" style="width:100%;">Add to Cart</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function searchProducts() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.getElementsByClassName('product');
+    Array.from(cards).forEach(card => {
+        const title = card.querySelector('h3').innerText.toLowerCase();
+        card.style.display = title.includes(query) ? 'block' : 'none';
+    });
+}
+
+function quickView(id) {
+    const item = [...products, ...productPosts].find(p => p.id === id);
+    const content = document.getElementById("viewContent");
+    if (!item || !content) return;
+
+    content.innerHTML = `
+        <img src="${item.image}" style="width:100%; border-radius:10px; margin-bottom:15px;">
+        <h2>${item.title}</h2>
+        <p style="margin: 10px 0; color: #666;">${item.description}</p>
+        <h3 style="color:#1e40af">₦${item.price.toLocaleString()}</h3>
+        <button class="btn-main" onclick="addToCart('${item.id}'); closeModal('viewModal')" style="width:100%;">Add to Cart</button>
+    `;
+    openModal('viewModal');
+}
+
+// 5. CART LOGIC
+function addToCart(id) {
+    const existing = cart.find(i => i.id === id);
+    if (existing) existing.qty++;
+    else cart.push({ id, qty: 1 });
+    
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartBadge();
+    alert("Item added to cart!");
+}
+
+function updateCartBadge() {
+    const count = cart.reduce((acc, item) => acc + item.qty, 0);
+    const badge = document.getElementById("cart-count") || document.getElementById("cart-badge");
+    if (badge) badge.innerText = count;
+}
+
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartBadge();
+    renderCart();
+}
+
+function renderCart() {
+    const cartItemsDiv = document.getElementById("cartItems");
+    if (!cartItemsDiv) return;
+    cartItemsDiv.innerHTML = ""; 
+
+    if (cart.length === 0) {
+        cartItemsDiv.innerHTML = "<p style='text-align:center; padding: 20px;'>Your cart is empty.</p>";
+        return;
+    }
+
+    let total = 0;
+    cart.forEach(item => {
+        const product = [...products, ...productPosts].find(p => p.id === item.id);
+        if (product) {
+            const itemTotal = product.price * item.qty;
+            total += itemTotal;
+            const div = document.createElement("div");
+            div.className = "cart-item"; 
+            div.style = "display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:10px 0;";
+            div.innerHTML = `
+                <span><strong>${product.title}</strong> (x${item.qty})</span>
+                <span>₦${itemTotal.toLocaleString()}</span>
+                <button onclick="removeFromCart('${product.id}')" style="color:red; background:none; border:none; cursor:pointer; font-size:1.2rem;">&times;</button>
+            `;
+            cartItemsDiv.appendChild(div);
+        }
+    });
+
+    const summary = document.createElement("div");
+    summary.style = "text-align: center; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 10px;";
+    const buttonText = currentUser ? "Proceed to Payment" : "Login to Checkout";
+    const hint = currentUser ? "" : "<p style='font-size:0.8rem; color:gray;'>Account required for checkout</p>";
+
+    summary.innerHTML = `
+        <h3>Total: ₦${total.toLocaleString()}</h3>
+        ${hint}
+        <button class="btn-main" onclick="startCheckout()" style="width:100%; margin-top:10px;">${buttonText}</button>
+    `;
+    cartItemsDiv.appendChild(summary);
+}
+
+// 6. CHECKOUT & TRACKING
+function startCheckout() {
+    if (cart.length === 0) return alert("Cart is empty!");
+    if (!currentUser) return openModal('authModal');
+    
+    const total = cart.reduce((acc, item) => {
+        const p = [...products, ...productPosts].find(prod => prod.id === item.id);
+        return acc + (p ? p.price * item.qty : 0);
+    }, 0);
+
+    const totalDisplay = document.getElementById("paymentTotal");
+    if (totalDisplay) totalDisplay.innerText = `Total to Pay: ₦${total.toLocaleString()}`;
+    openModal('checkoutModal');
+}
+
+function handlePayment(event) {
+    event.preventDefault();
+    
+    // 1. Hide form, show loading spinner
+    document.getElementById("checkoutForm").style.display = "none";
+    document.getElementById("paymentLoading").style.display = "block";
+
+    // 2. Simulate bank processing (3 seconds)
+    setTimeout(() => {
+        processFinalOrder();
+    }, 3000);
+}
+
+function processFinalOrder() {
+    const orderId = "ORD-" + Math.floor(10000 + Math.random() * 90000);
+    
+    // Capture data
+    const customer = {
+        name: document.getElementById("custName").value,
+        address: document.getElementById("custAddress").value,
+        phone: document.getElementById("custPhone").value,
+        email: currentUser.email
+    };
+
+    const newOrder = {
+        id: orderId,
+        customer: customer,
+        items: [...cart],
+        status: "Paid & Processing",
+        date: new Date().toLocaleString(),
+        total: cart.reduce((acc, item) => {
+            const p = [...products, ...productPosts].find(prod => prod.id === item.id);
+            return acc + (p ? p.price * item.qty : 0);
+        }, 0)
+    };
+
+    // Save order
+    orders.push(newOrder);
+    localStorage.setItem("orders", JSON.stringify(orders));
+    
+    // Reset Cart
+    cart = [];
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartBadge();
+    
+    // Reset UI
+    closeModal('checkoutModal');
+    document.getElementById("checkoutForm").style.display = "block";
+    document.getElementById("paymentLoading").style.display = "none";
+    document.getElementById("checkoutForm").reset();
+
+    // Show Professional Success Alert (Optional: You could build a Success Modal)
+    Swal.fire({ // If you use SweetAlert, or just use a standard alert
+        title: 'Order Placed!',
+        text: `Your Order ID is ${orderId}. You can track it in 'My Orders'.`,
+        icon: 'success',
+        confirmButtonText: 'Great!'
+    });
+    
+    showSection('orders'); // Take them straight to their history
+}
+function processFinalOrder() {
+    const orderId = "ORD-" + Math.floor(10000 + Math.random() * 90000);
+    const customer = {
+        name: document.getElementById("custName").value,
+        address: document.getElementById("custAddress").value,
+        phone: document.getElementById("custPhone").value,
+        email: currentUser.email
+    };
+
+    const newOrder = {
+        id: orderId,
+        customer: customer,
+        items: [...cart],
+        status: "Paid & Processing",
+        date: new Date().toLocaleString(),
+        total: cart.reduce((acc, item) => {
+            const p = [...products, ...productPosts].find(prod => prod.id === item.id);
+            return acc + (p ? p.price * item.qty : 0);
+        }, 0)
+    };
+
+    orders.push(newOrder);
+    localStorage.setItem("orders", JSON.stringify(orders));
+    cart = [];
+    localStorage.setItem("cart", JSON.stringify(cart));
+    updateCartBadge();
+    
+    closeModal('checkoutModal');
+    document.getElementById("checkoutForm").style.display = "block";
+    document.getElementById("paymentLoading").style.display = "none";
+    document.getElementById("checkoutForm").reset();
+
+    alert(`Order Success! ID: ${orderId}`);
+    showSection('shop');
+}
+
+function trackOrder() {
+    const input = document.getElementById("orderIdInput");
+    const resultDiv = document.getElementById("trackResult");
+    if (!input || !resultDiv) return;
+
+    const query = input.value.trim().toLowerCase();
+    const found = orders.find(o => o.id.toLowerCase() === query);
+
+    if (found) {
+        resultDiv.innerHTML = `
+            <div style="background:#f0f7ff; padding:15px; border-radius:8px; border-left:4px solid #2563eb; margin-top:20px;">
+                <h4>Order Found: ${found.status}</h4>
+                <p><strong>Address:</strong> ${found.customer.address}</p>
+                <p><strong>Total:</strong> ₦${found.total.toLocaleString()}</p>
+                <p><small>Placed on: ${found.date}</small></p>
+            </div>`;
+    } else {
+        resultDiv.innerHTML = `<p style="color:red; margin-top:20px;">Order ID not found.</p>`;
+    }
+}
+
+// 7. UI UTILS
+function showSection(id) {
+    // Add 'ordersSection' to your list
+    const sections = ['shopSection', 'cartSection', 'trackSection', 'adminSection', 'ordersSection'];
+    sections.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.style.display = (s === id + 'Section') ? 'block' : 'none';
+    });
+
+    if (id === 'shop') renderProducts('All');
+    if (id === 'cart') renderCart();
+    if (id === 'orders') renderUserOrders(); // New trigger
+}
+function renderUserOrders() {
+    const container = document.getElementById("orderHistoryContainer");
+    if (!container || !currentUser) return;
+
+    // Filter orders belonging to the logged-in user
+    const myOrders = orders.filter(o => o.customer.email === currentUser.email);
+
+    if (myOrders.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding: 40px; background: #f8fafc; border-radius: 12px;">
+                <p>You haven't placed any orders yet.</p>
+                <button class="btn-main" onclick="showSection('shop')">Start Shopping</button>
+            </div>`;
+        return;
+    }
+
+    let html = `
+        <table style="width:100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <thead style="background: #1e40af; color: white;">
+                <tr>
+                    <th style="padding: 12px; text-align: left;">Order ID</th>
+                    <th style="padding: 12px; text-align: left;">Date</th>
+                    <th style="padding: 12px; text-align: left;">Total</th>
+                    <th style="padding: 12px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    myOrders.reverse().forEach(order => { // .reverse() shows newest first
+        html += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px; font-weight: bold;">${order.id}</td>
+                <td style="padding: 12px; font-size: 0.85rem;">${order.date}</td>
+                <td style="padding: 12px;">₦${order.total.toLocaleString()}</td>
+                <td style="padding: 12px;">
+                    <span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">
+                        ${order.status}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
+function openModal(id) { 
+    const modal = document.getElementById(id);
+    if(modal) modal.style.display = "block"; 
+}
+function closeModal(id) { 
+    const modal = document.getElementById(id);
+    if(modal) modal.style.display = "none"; 
+}
+
+const hamburger = document.getElementById('hamburger');
+if(hamburger) {
+    hamburger.onclick = () => {
+        const nav = document.getElementById('mainNav');
+        nav.style.display = nav.style.display === 'block' ? 'none' : 'block';
+    }
+}
+</script>
+</body>
+</html>
