@@ -742,6 +742,46 @@
       margin: 0 auto 15px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+	  @media screen and (max-width: 768px) {
+    /* Stack the header elements vertically instead of squishing them */
+    .header-top {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 15px !important;
+        padding: 15px 10px !important;
+    }
+
+    /* Arrange the buttons into a neat wrapping row */
+    .nav-auth-group, 
+    #nav-auth-group {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    /* Give buttons breathing room on mobile mobile views */
+    .btn-nav {
+        padding: 8px 14px !important;
+        font-size: 0.85rem !important;
+        flex: 1 1 auto !important; 
+        min-width: 75px !important;
+        justify-content: center !important;
+    }
+
+    /* Center the profile badge inside the row */
+    .user-badge, 
+    #userBadge {
+        width: auto !important;
+        margin: 5px 0 !important;
+        padding: 4px 10px !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 20px !important;
+    }
+}
+
 </style>
 </head>
 <body>
