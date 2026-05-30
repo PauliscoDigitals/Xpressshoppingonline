@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -943,68 +944,68 @@ function toggleAuthMode() {
 
 async function handleAuth(e) {
     e.preventDefault();
-    
-    // Safety latch: If the function is already running, block the second click immediately
-    if (isSubmitting) return; 
+    if (isSubmitting) return; // Prevent double-submission spam
     isSubmitting = true;
 
-    const email = document.getElementById("authEmail").value.trim();
-    const password = document.getElementById("authPassword").value;
-
+    const emailInput = document.getElementById("authEmail")?.value.trim().toLowerCase();
+    const nameInput = document.getElementById("authName")?.value.trim();
+    const phoneInput = document.getElementById("authPhone")?.value.trim();
+    
+    // NOTE: Replace this mock authentication logic with your actual password verification / Supabase Auth if using it
     try {
-        if (isLoginMode) {
-            // Verify structural authentication parameters against cloud user profile tables
-            const { data: userRecords, error } = await _supabase
-                .from('app_users')
-                .select('*')
-                .eq('email', email)
-                .eq('password', password);
+        // 1. Check if the profile already exists in our app_users database
+        let { data: userProfile, error: fetchError } = await _supabase
+            .from('app_users')
+            .select('*')
+            .eq('email', emailInput)
+            .single();
 
-            if (error) throw error;
+        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // Ignore "no rows found" error
 
-            if (userRecords && userRecords.length > 0) {
-                currentUser = userRecords[0];
-                finalizeLogin();
-            } else {
-                Swal.fire("Error", "Invalid authentication login credentials!", "error");
+        if (userProfile) {
+            // 🛑 SECURITY CHECK: If the admin panel marked this node as suspended, block entry!
+            if (userProfile.status === 'suspended') {
+                Swal.fire("Access Denied", "Your account has been suspended by system administration.", "error");
+                isSubmitting = false;
+                return;
             }
+            
+            // Log them in with their live database credentials
+            currentUser = userProfile;
         } else {
-            // Check mapping conflict exceptions
-            const { data: existingUser } = await _supabase
-                .from('app_users')
-                .select('email')
-                .eq('email', email);
-
-            if (existingUser && existingUser.length > 0) {
-                isSubmitting = false; // Reset latch
-                return Swal.fire("Warning", "Email parameter profile mapping already exists!", "warning");
-            }
-
-            const newUser = { 
-                email, 
-                password, 
-                role: (email === 'admin@xpress.com' ? 'admin' : 'user'),
-                display_name: '',
-                phone: ''
+            // 🆕 REGISTRATION: If they don't exist yet, provision their database record automatically
+            const newProfile = {
+                email: emailInput,
+                display_name: nameInput || emailInput.split('@')[0],
+                phone: phoneInput || null,
+                role: 'user',
+                status: 'active'
             };
 
-            const { error: regError } = await _supabase
+            const { error: insertError } = await _supabase
                 .from('app_users')
-                .insert([newUser]);
+                .insert([newProfile]);
 
-            if (regError) throw regError;
-
-            currentUser = newUser;
-            finalizeLogin();
+            if (insertError) throw insertError;
+            currentUser = newProfile;
         }
+
+        // 2. Commit session to local storage to persist the user interface state
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        
+        Swal.fire("Welcome!", `Authenticated successfully as ${currentUser.display_name}`, "success");
+        updateAuthUI(); // Trigger your UI element updates
+        
+        // Hide auth modals/drawers if you have them open
+        document.getElementById("authModal")?.classList.remove("active");
+
     } catch (err) {
-        Swal.fire("Authentication Pipeline Interrupted", err.message, "error");
+        console.error("Auth pipeline execution failure:", err.message);
+        Swal.fire("Authentication Error", err.message, "error");
     } finally {
-        // Always reset the safety latch when done processing
-        isSubmitting = false; 
+        isSubmitting = false;
     }
-}
-function finalizeLogin() {
+}function finalizeLogin() {
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
     closeModal('authModal');
     updateAuthUI();
@@ -1561,6 +1562,44 @@ function closeModal(targetModalIdentity) {
     const targetElement = document.getElementById(targetModalIdentity);
     if(targetElement) targetElement.style.display = "none";
 }
+</script>
+<!-- Code injected by live-server -->
+<script>
+	// <![CDATA[  <-- For SVG support
+	if ('WebSocket' in window) {
+		(function () {
+			function refreshCSS() {
+				var sheets = [].slice.call(document.getElementsByTagName("link"));
+				var head = document.getElementsByTagName("head")[0];
+				for (var i = 0; i < sheets.length; ++i) {
+					var elem = sheets[i];
+					var parent = elem.parentElement || head;
+					parent.removeChild(elem);
+					var rel = elem.rel;
+					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
+						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
+						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
+					}
+					parent.appendChild(elem);
+				}
+			}
+			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
+			var address = protocol + window.location.host + window.location.pathname + '/ws';
+			var socket = new WebSocket(address);
+			socket.onmessage = function (msg) {
+				if (msg.data == 'reload') window.location.reload();
+				else if (msg.data == 'refreshcss') refreshCSS();
+			};
+			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
+				console.log('Live reload enabled.');
+				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
+			}
+		})();
+	}
+	else {
+		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
+	}
+	// ]]>
 </script>
 </body>
 </html>
