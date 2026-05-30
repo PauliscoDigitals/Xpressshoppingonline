@@ -8,6 +8,56 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+      /* ========================================================
+   GLOBAL SCREEN INTERACTION OVERLAY LOADER
+   ======================================================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.7); /* Modern deep dark slate translucent background */
+    backdrop-filter: blur(4px); /* Softly blurs underlying UI content components */
+    display: none; /* Kept hidden until programmatically invoked */
+    justify-content: center;
+    align-items: center;
+    z-index: 999999; /* Higher stack value than standard navigation grids or modal windows */
+    transition: opacity 0.2s ease-in-out;
+}
+
+.spinner-wrapper {
+    text-align: center;
+}
+
+/* The Animated Spinning Ring Element */
+.loading-spinner {
+    width: 55px;
+    height: 55px;
+    border: 5px solid rgba(255, 255, 255, 0.15);
+    border-top: 5px solid #1a42af; /* Matches your header primary theme color matrix */
+    border-radius: 50%;
+    animation: spinRing 0.85s linear infinite;
+    margin: 0 auto 18px auto;
+    box-shadow: 0 0 15px rgba(26, 66, 175, 0.2);
+}
+
+.loading-status-text {
+    color: #ffffff;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+/* Rotational Animation Loop Keyframes */
+@keyframes spinRing {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+  
     /* ==========================================
        1. CSS VARIABLES & SYSTEM THEMING
        ========================================== */
@@ -257,7 +307,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       transition: background 0.3s ease;
     }
-
     .header-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -696,7 +745,12 @@
 </style>
 </head>
 <body>
-
+<div id="globalLoader" class="loading-overlay">
+    <div class="spinner-wrapper">
+        <div class="loading-spinner"></div>
+        <p class="loading-status-text">Please Wait....</p>
+    </div>
+</div>
 <header>
   <div class="header-container">
     <div class="header-top">
@@ -982,11 +1036,27 @@
 
 <footer>
     <p>&copy; 2026 <strong>Xpress Shopping</strong>. All Rights Reserved. Fast & Secure.</p>
-    <p style="font-size: 0.75rem; margin-top: 5px; opacity: 0.6;">Website engineered by Paulisco Digitals</p>
+    <p style="font-size: 0.90rem; margin-top: 5px; opacity: 0.6;">Website engineered by Paulisco Digitals</p>
 </footer>
 
 <script>
-   
+   // Line 975: <script>
+
+// PASTE THE LOADER FUNCTIONS HERE (LINE 976)
+function showLoader(customMessage = "Synchronizing Data...") {
+    const loader = document.getElementById("globalLoader");
+    if (loader) {
+        loader.querySelector(".loading-status-text").innerText = customMessage;
+        loader.style.display = "flex";
+    }
+}
+
+function hideLoader() {
+    const loader = document.getElementById("globalLoader");
+    if (loader) {
+        loader.style.display = "none";
+    }
+}
 // ==========================================
 // 1. SYSTEM INITIALIZATION & CLOUD BACKEND DATA CONFIG
 // ==========================================
@@ -1136,7 +1206,15 @@ function showLoadingSkeletons(targetContainerId, cardCount = 6) {
 // ==========================================
 // 3. APPLICATION ROUTING & NAVIGATION
 // ==========================================
+
 function showSection(sectionId) {
+    
+    showLoader("Loading requested dashboard...");
+setTimeout(() => {
+       
+    hideLoader();
+    }, 400); // 400 milliseconds provides a clean, responsive visual flow
+
     const sections = ['shopSection', 'ordersSection', 'cartSection', 'trackSection', 'adminSection', 'settingsSection'];
     sections.forEach(id => {
         const element = document.getElementById(id);
@@ -1896,6 +1974,7 @@ function triggerSecureLogout() {
         }
     });
 }
+
 </script>
 </body>
 </html>
