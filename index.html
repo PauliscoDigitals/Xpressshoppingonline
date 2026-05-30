@@ -674,12 +674,14 @@
     </div>
 </div>
 
-<div id="authModal" class="modal">
+<<div id="authModal" class="modal">
     <div class="modal-content" style="max-width: 400px; padding: 30px;">
         <span class="close" onclick="closeModal('authModal')">&times;</span>
         <div id="authContent">
             <h2 id="authTitle" style="text-align: center; color: var(--primary); margin-bottom: 20px;">Login</h2>
-            <form id="authForm" onsubmit="handleAuth(event)">
+            
+            <!-- REMOVED inline onsubmit to prevent the double-firing bug -->
+            <form id="authForm">
                 <label style="font-size: 0.75rem; font-weight: 700; color: #475569; display: block; margin-bottom: 5px;">EMAIL ADDRESS</label>
                 <input type="email" id="authEmail" placeholder="e.g. yourname@mail.com" required>
                 
@@ -688,6 +690,7 @@
                 
                 <button type="submit" class="btn-main btn-block" id="authSubmitBtn" style="padding: 12px;">Login</button>
             </form>
+            
             <p style="margin-top: 20px; text-align: center; font-size: 0.88rem; color: #64748b;">
                 <span id="authToggleText">Don't have an account?</span> 
                 <a href="javascript:void(0)" onclick="toggleAuthMode()" id="authLink" style="color: var(--secondary); font-weight: bold; text-decoration: none; margin-left: 5px;">Sign Up</a>
@@ -779,7 +782,7 @@ let wishlist = JSON.parse(localStorage.getItem("xpress_wishlist")) || [];
 let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
 let isLoginMode = true;
 let activeCoupon = null;
-
+let isSubmitting = false; // <-- ADD THIS LINE HERE
 // Coupon Verification Reference Tables
 const COUPON_DATABASE = {
     "SAVE10": { type: "percentage", value: 0.10 },
@@ -940,6 +943,11 @@ function toggleAuthMode() {
 
 async function handleAuth(e) {
     e.preventDefault();
+    
+    // Safety latch: If the function is already running, block the second click immediately
+    if (isSubmitting) return; 
+    isSubmitting = true;
+
     const email = document.getElementById("authEmail").value.trim();
     const password = document.getElementById("authPassword").value;
 
@@ -968,10 +976,10 @@ async function handleAuth(e) {
                 .eq('email', email);
 
             if (existingUser && existingUser.length > 0) {
+                isSubmitting = false; // Reset latch
                 return Swal.fire("Warning", "Email parameter profile mapping already exists!", "warning");
             }
 
-            // FIX 2: Standardized 'display_name' property to map to lowercase Postgres columns
             const newUser = { 
                 email, 
                 password, 
@@ -991,9 +999,11 @@ async function handleAuth(e) {
         }
     } catch (err) {
         Swal.fire("Authentication Pipeline Interrupted", err.message, "error");
+    } finally {
+        // Always reset the safety latch when done processing
+        isSubmitting = false; 
     }
 }
-
 function finalizeLogin() {
     localStorage.setItem("currentUser", JSON.stringify(currentUser));
     closeModal('authModal');
