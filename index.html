@@ -781,7 +781,30 @@
         border-radius: 20px !important;
     }
 }
+/* Ensure the main header behaves as a fixed container */
+header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out !important;
+}
 
+/* Push your main page content down so it doesn't hide behind our fixed header */
+body {
+    padding-top: 180px; /* Adjust this value if your header is taller or shorter */
+}
+
+/* This class will be applied automatically via JavaScript when scrolling down */
+header.header-condensed {
+    transform: translateY(-90px); /* Adjust this to match the exact height of your title section */
+}
+
+/* Make sure the search container stays fully visible and interactive when shifted */
+.search-container {
+    transition: all 0.3s ease-in-out;
+}
 </style>
 </head>
 <body>
@@ -2014,7 +2037,25 @@ function triggerSecureLogout() {
         }
     });
 }
+let lastScrollTop = 0;
+const headerElement = document.querySelector("header");
 
+window.addEventListener("scroll", function() {
+    let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Prevent negative scrolling errors on mobile bouncy screens
+    if (currentScroll < 0) currentScroll = 0; 
+
+    if (currentScroll > lastScrollTop && currentScroll > 60) {
+        // Scrolling DOWN -> Slide the top section out, keeping search and cart visible
+        headerElement.classList.add("header-condensed");
+    } else {
+        // Scrolling UP -> Pull everything back down to normal
+        headerElement.classList.remove("header-condensed");
+    }
+    
+    lastScrollTop = currentScroll;
+});
 </script>
 </body>
 </html>
