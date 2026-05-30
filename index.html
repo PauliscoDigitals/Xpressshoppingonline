@@ -795,6 +795,9 @@ window.onload = async () => {
     updateAuthUI();
     updateCartBadge();
     updateWishlistUI();
+
+    // FIX 1: Bind the auth form submission directly to prevent standard page-reload behavior
+    document.getElementById("authForm")?.addEventListener("submit", handleAuth);
     
     // Asynchronously fetch cloud data records stream
     showLoadingSkeletons("products", 6);
@@ -968,11 +971,12 @@ async function handleAuth(e) {
                 return Swal.fire("Warning", "Email parameter profile mapping already exists!", "warning");
             }
 
+            // FIX 2: Standardized 'display_name' property to map to lowercase Postgres columns
             const newUser = { 
                 email, 
                 password, 
                 role: (email === 'admin@xpress.com' ? 'admin' : 'user'),
-                displayName: '',
+                display_name: '',
                 phone: ''
             };
 
@@ -1025,7 +1029,8 @@ function updateAuthUI() {
         if (ordersBtn) ordersBtn.style.display = "inline-flex";
         if (userBadge) {
             userBadge.style.display = "flex";
-            displayUsername.innerText = currentUser.displayName || currentUser.email.split('@')[0];
+            // Updated to fallback on lowercase display_name setup
+            displayUsername.innerText = currentUser.display_name || currentUser.email.split('@')[0];
             userInitial.innerText = currentUser.email[0].toUpperCase();
             userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
         }
@@ -1063,7 +1068,7 @@ function populateSettingsUI() {
     }
 
     document.getElementById("settingsEmail").value = currentUser.email || '';
-    document.getElementById("settingsName").value = currentUser.displayName || '';
+    document.getElementById("settingsName").value = currentUser.display_name || '';
     document.getElementById("settingsPhone").value = currentUser.phone || '';
     
     document.getElementById("settingsCountry").value = localStorage.getItem("xpress_country") || "NG";
@@ -1073,14 +1078,14 @@ function populateSettingsUI() {
 async function saveProfileSettings() {
     if (!currentUser) return;
 
-    currentUser.displayName = document.getElementById("settingsName").value.trim();
+    currentUser.display_name = document.getElementById("settingsName").value.trim();
     currentUser.phone = document.getElementById("settingsPhone").value.trim();
     
     try {
         // Commit live structural changes upstream to Supabase users data record matrix safely
         const { error } = await _supabase
             .from('app_users')
-            .update({ displayName: currentUser.displayName, phone: currentUser.phone })
+            .update({ display_name: currentUser.display_name, phone: currentUser.phone })
             .eq('email', currentUser.email);
 
         if (error) throw error;
@@ -1114,12 +1119,12 @@ function flushAppStorage() {
         confirmButtonText: "Confirm Global Overwrite"
     }).then((result) => {
         if (result.isConfirmed) {
+            // Clears browser local memory cleanly
             localStorage.clear();
             location.reload();
         }
     });
 }
-
 // ==========================================
 // 6. RENDERING & DATA FILTER CORES
 // ==========================================
