@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Xpress Shopping</title>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ==========================================
        1. CSS VARIABLES & SYSTEM THEMING
@@ -762,54 +762,77 @@
 
 <script>
 // ==========================================
-// 1. SYSTEM INITIALIZATION & CORE DATA ARRAY
+// 1. SYSTEM INITIALIZATION & CLOUD BACKEND DATA CONFIG
 // ==========================================
-const products = [
-    { id: "p1", category: "gadgets", title: "Wireless Earbuds", description: "Premium ergonomic structural passive noise cancellation architecture.", price: 4500, stock: 15, rating: 4.5, image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400" },
-    { id: "p2", category: "appliances", title: "Microwave Oven", description: "Quick radiant heating 700W micro-wave technology engine.", price: 15000, stock: 4, rating: 4.0, image: "https://images.unsplash.com/photo-1574265353302-63081564b01a?auto=format&fit=crop&w=400" },
-    { id: "p3", category: "clothing", title: "Men's Denim Jacket", description: "Classic custom styling durable regular denim weave fit.", price: 5500, stock: 8, rating: 4.8, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" },
-    { id: "p4", category: "appliances", title: "Electric Cooking Stove", description: "High thermal energy conversion optimized cooktop deck.", price: 370000, stock: 2, rating: 5.0, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" },
-    { id: "p5", category: "gadgets", title: "Airtel 4G Pocket Wifi", description: "High speed portable wideband mobile hotspot router setup.", price: 12000, stock: 0, rating: 3.5, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" },
-    { id: "p6", category: "gadgets", title: "Samsung Airpro 5", description: "Immersive acoustics spatial deep bass sound output profile.", price: 9500, stock: 12, rating: 4.2, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" },
-    { id: "p7", category: "gadgets", title: "JBL Headset", description: "Over-ear extended runtime dynamic frequency responsive headset.", price: 16000, stock: 6, rating: 4.7, image: "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400" }
-];
+const SUPABASE_URL = "https://trrtcmxqacepbhacipdr.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_7cnEJer20hKX8Zrwt8g_Og_7db-ELlb";
 
-// Coupon Database
+// Initialize global connection instance
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Operational dynamic memory indices
+let products = [];
+let productPosts = [];
+let orders = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || []; // Cart states naturally map to local browser sessions until final transaction checkout
+let wishlist = JSON.parse(localStorage.getItem("xpress_wishlist")) || [];
+let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+let isLoginMode = true;
+let activeCoupon = null;
+
+// Coupon Verification Reference Tables
 const COUPON_DATABASE = {
     "SAVE10": { type: "percentage", value: 0.10 },
     "XPRESS2K": { type: "flat", value: 2000 }
 };
 
-// Safety Reset Parsing Guard
-try {
-    JSON.parse(localStorage.getItem("users"));
-} catch (e) {
-    console.warn("Storage sequence corruption detected. Flushing tables...");
-    localStorage.clear();
-}
-
-let productPosts = JSON.parse(localStorage.getItem("productPosts")) || [];
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-let orders = JSON.parse(localStorage.getItem("orders")) || [];
-let users = JSON.parse(localStorage.getItem("users")) || [];
-let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
-let wishlist = JSON.parse(localStorage.getItem("xpress_wishlist")) || [];
-let isLoginMode = true;
-let activeCoupon = null;
-
-window.onload = () => {
-    // Initialize Theme
+window.onload = async () => {
+    // Initialize Theme configuration presets
     if (localStorage.getItem('xpress_theme') === 'dark') {
         document.body.classList.add('dark-theme');
     }
+    
     updateAuthUI();
-    renderProducts('all');
     updateCartBadge();
     updateWishlistUI();
+    
+    // Asynchronously fetch cloud data records stream
+    showLoadingSkeletons("products", 6);
+    await syncDataFromSupabase();
+    renderProducts('all');
 };
 
+// Unified Data Capture Synchronization Hook
+async function syncDataFromSupabase() {
+    try {
+        // 1. Load entire product schema ecosystem catalog data
+        const { data: fetchedProducts, error: prodError } = await _supabase
+            .from('products')
+            .select('*');
+
+        if (prodError) throw prodError;
+
+        if (fetchedProducts) {
+            // Segregate base inventory sets from user marketplace listings cleanly via database flags
+            products = fetchedProducts.filter(p => p.is_base_product === true);
+            productPosts = fetchedProducts.filter(p => p.is_base_product === false);
+        }
+
+        // 2. Load historical processing orders structural context frame logs
+        const { data: fetchedOrders, error: ordError } = await _supabase
+            .from('orders')
+            .select('*');
+
+        if (ordError) throw ordError;
+        if (fetchedOrders) orders = fetchedOrders;
+
+    } catch (err) {
+        console.error("Database sync pipe failed to connect:", err.message);
+    }
+}
+
 // ==========================================
-// 2. NEW FEATURE MODULES
+// 2. UTILITY MODULES & PREFERENCES
 // ==========================================
 function toggleTheme() {
     const isDark = document.body.classList.toggle('dark-theme');
@@ -859,7 +882,7 @@ function applyPromoCode() {
     }
     
     activeCoupon = coupon;
-    renderCart(); // Re-render to show discount
+    renderCart(); 
     Swal.fire("Success", `Coupon ${codeInput} applied successfully!`, "success");
 }
 
@@ -882,10 +905,9 @@ function showLoadingSkeletons(targetContainerId, cardCount = 6) {
 }
 
 // ==========================================
-// 3. COMPACT ROUTING & APPLICATION SECTION MANAGEMENT
+// 3. APPLICATION ROUTING & NAVIGATION
 // ==========================================
 function showSection(sectionId) {
-    // Added 'settings' to the array checklist
     const sections = ['shopSection', 'ordersSection', 'cartSection', 'trackSection', 'adminSection', 'settingsSection'];
     sections.forEach(id => {
         const element = document.getElementById(id);
@@ -899,11 +921,11 @@ function showSection(sectionId) {
     
     if(sectionId === 'cart') renderCart();
     if(sectionId === 'admin') renderAdminPanel();
-    if(sectionId === 'settings') populateSettingsUI(); // New verification hook
+    if(sectionId === 'settings') populateSettingsUI(); 
 }
 
 // ==========================================
-// 4. AUTHENTICATION CONTROLLERS
+// 4. CLOUD BACKEND SECURE AUTHENTICATION SYSTEM
 // ==========================================
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
@@ -912,100 +934,59 @@ function toggleAuthMode() {
     document.getElementById("authToggleText").innerText = isLoginMode ? "Don't have an account?" : "Already have an account?";
     document.getElementById("authLink").innerText = isLoginMode ? "Sign Up" : "Login";
 }
-// Sync form arrays with active token data profiles
-function populateSettingsUI() {
-    if (!currentUser) {
-        document.getElementById("settingsProfileGate").innerHTML = `
-            <p style="color: var(--danger); font-size: 0.9rem; margin-bottom: 15px;">Session mapping isolated. Authenticate to access profile elements.</p>
-            <button class="btn-main btn-block" onclick="openModal('authModal')">🔓 Authenticate Session</button>
-        `;
-        return;
-    }
 
-    // Populate data nodes safely
-    document.getElementById("settingsEmail").value = currentUser.email || '';
-    document.getElementById("settingsName").value = currentUser.displayName || '';
-    document.getElementById("settingsPhone").value = currentUser.phone || '';
-    
-    // Load local variations if present
-    document.getElementById("settingsCountry").value = localStorage.getItem("xpress_country") || "NG";
-    document.getElementById("settingsCurrency").value = localStorage.getItem("xpress_currency") || "NGN";
-}
-
-// Persist alterations down to targeted local collections
-function saveProfileSettings() {
-    if (!currentUser) return;
-
-    // Update active runtime variables
-    currentUser.displayName = document.getElementById("settingsName").value.trim();
-    currentUser.phone = document.getElementById("settingsPhone").value.trim();
-    
-    // Sync into global user storage index
-    const uIndex = users.findIndex(u => u.email === currentUser.email);
-    if (uIndex > -1) {
-        users[uIndex].displayName = currentUser.displayName;
-        users[uIndex].phone = currentUser.phone;
-        localStorage.setItem("users", JSON.stringify(users));
-    }
-    
-    // Save current session context state
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    
-    // Save localizations
-    localStorage.setItem("xpress_country", document.getElementById("settingsCountry").value);
-    localStorage.setItem("xpress_currency", document.getElementById("settingsCurrency").value);
-    
-    updateAuthUI(); // Keep badges up to date
-    Swal.fire("Profile Synchronized", "Configuration array context records committed cleanly to storage indexes.", "success");
-}
-
-// Display Legal Framework Prompts via SweetAlert
-function showLegal(type) {
-    const content = type === 'terms' 
-        ? "Users agree to deploy system nodes exclusively for legal, non-exploitative marketplace processing functions."
-        : "Privacy parameters ensure zero outbound leaks. Standard storage mechanisms map to local machine arrays entirely.";
-        
-    Swal.fire(type === 'terms' ? "Terms of Use" : "Privacy Protocols", content, "info");
-}
-
-// Full memory purge operation
-function flushAppStorage() {
-    Swal.fire({
-        title: "Purge System Arrays?",
-        text: "This action clears carts, local accounts, and operational tracking parameters permanently.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "var(--danger)",
-        confirmButtonText: "Confirm Global Overwrite"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            localStorage.clear();
-            location.reload();
-        }
-    });
-}
-function handleAuth(e) {
+async function handleAuth(e) {
     e.preventDefault();
-    const email = document.getElementById("authEmail").value;
+    const email = document.getElementById("authEmail").value.trim();
     const password = document.getElementById("authPassword").value;
 
-    if (isLoginMode) {
-        const user = users.find(u => u.email === email && u.password === password);
-        if (user) {
-            currentUser = user;
-            finalizeLogin();
+    try {
+        if (isLoginMode) {
+            // Verify structural authentication parameters against cloud user profile tables
+            const { data: userRecords, error } = await _supabase
+                .from('app_users')
+                .select('*')
+                .eq('email', email)
+                .eq('password', password);
+
+            if (error) throw error;
+
+            if (userRecords && userRecords.length > 0) {
+                currentUser = userRecords[0];
+                finalizeLogin();
+            } else {
+                Swal.fire("Error", "Invalid authentication login credentials!", "error");
+            }
         } else {
-            Swal.fire("Error", "Invalid authentication login credentials!", "error");
+            // Check mapping conflict exceptions
+            const { data: existingUser } = await _supabase
+                .from('app_users')
+                .select('email')
+                .eq('email', email);
+
+            if (existingUser && existingUser.length > 0) {
+                return Swal.fire("Warning", "Email parameter profile mapping already exists!", "warning");
+            }
+
+            const newUser = { 
+                email, 
+                password, 
+                role: (email === 'admin@xpress.com' ? 'admin' : 'user'),
+                displayName: '',
+                phone: ''
+            };
+
+            const { error: regError } = await _supabase
+                .from('app_users')
+                .insert([newUser]);
+
+            if (regError) throw regError;
+
+            currentUser = newUser;
+            finalizeLogin();
         }
-    } else {
-        if (users.find(u => u.email === email)) {
-            return Swal.fire("Warning", "Email parameter profile mapping already exists!", "warning");
-        }
-        const newUser = { email, password, role: (email === 'admin@xpress.com' ? 'admin' : 'user') };
-        users.push(newUser);
-        localStorage.setItem("users", JSON.stringify(users));
-        currentUser = newUser;
-        finalizeLogin();
+    } catch (err) {
+        Swal.fire("Authentication Pipeline Interrupted", err.message, "error");
     }
 }
 
@@ -1044,7 +1025,7 @@ function updateAuthUI() {
         if (ordersBtn) ordersBtn.style.display = "inline-flex";
         if (userBadge) {
             userBadge.style.display = "flex";
-            displayUsername.innerText = currentUser.email.split('@')[0];
+            displayUsername.innerText = currentUser.displayName || currentUser.email.split('@')[0];
             userInitial.innerText = currentUser.email[0].toUpperCase();
             userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
         }
@@ -1064,65 +1045,130 @@ function updateAuthUI() {
         loginBtn.onclick = () => openModal('authModal');
         
         if (userBadge) userBadge.style.display = "none";
+        if (ordersBtn) BasinElement = "none";
         if (ordersBtn) ordersBtn.style.display = "none";
     }
 }
 
 // ==========================================
-// 5. RENDERING & FILTER ENGINE
+// 5. SETTINGS CONTROL ARCHITECTURE & SYNC
+// ==========================================
+function populateSettingsUI() {
+    if (!currentUser) {
+        document.getElementById("settingsProfileGate").innerHTML = `
+            <p style="color: var(--danger); font-size: 0.9rem; margin-bottom: 15px;">Session mapping isolated. Authenticate to access profile elements.</p>
+            <button class="btn-main btn-block" onclick="openModal('authModal')">🔓 Authenticate Session</button>
+        `;
+        return;
+    }
+
+    document.getElementById("settingsEmail").value = currentUser.email || '';
+    document.getElementById("settingsName").value = currentUser.displayName || '';
+    document.getElementById("settingsPhone").value = currentUser.phone || '';
+    
+    document.getElementById("settingsCountry").value = localStorage.getItem("xpress_country") || "NG";
+    document.getElementById("settingsCurrency").value = localStorage.getItem("xpress_currency") || "NGN";
+}
+
+async function saveProfileSettings() {
+    if (!currentUser) return;
+
+    currentUser.displayName = document.getElementById("settingsName").value.trim();
+    currentUser.phone = document.getElementById("settingsPhone").value.trim();
+    
+    try {
+        // Commit live structural changes upstream to Supabase users data record matrix safely
+        const { error } = await _supabase
+            .from('app_users')
+            .update({ displayName: currentUser.displayName, phone: currentUser.phone })
+            .eq('email', currentUser.email);
+
+        if (error) throw error;
+
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        localStorage.setItem("xpress_country", document.getElementById("settingsCountry").value);
+        localStorage.setItem("xpress_currency", document.getElementById("settingsCurrency").value);
+        
+        updateAuthUI(); 
+        Swal.fire("Profile Synchronized", "Configuration array context records committed cleanly to data layers.", "success");
+    } catch (err) {
+        Swal.fire("Profile Engine Failure", err.message, "error");
+    }
+}
+
+function showLegal(type) {
+    const content = type === 'terms' 
+        ? "Users agree to deploy system nodes exclusively for legal, non-exploitative marketplace processing functions."
+        : "Privacy parameters ensure zero outbound leaks. Standard storage mechanisms map to local machine arrays entirely.";
+        
+    Swal.fire(type === 'terms' ? "Terms of Use" : "Privacy Protocols", content, "info");
+}
+
+function flushAppStorage() {
+    Swal.fire({
+        title: "Purge System Arrays?",
+        text: "This action clears carts, local accounts, and operational tracking parameters permanently.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "var(--danger)",
+        confirmButtonText: "Confirm Global Overwrite"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.clear();
+            location.reload();
+        }
+    });
+}
+
+// ==========================================
+// 6. RENDERING & DATA FILTER CORES
 // ==========================================
 function renderProducts(filter = 'all') {
     const grid = document.getElementById("products");
     if (!grid) return;
     
-    // Trigger Skeleton UI
-    showLoadingSkeletons("products", 6);
+    grid.innerHTML = "";
 
-    setTimeout(() => {
-        grid.innerHTML = "";
+    const approvedPosts = productPosts.filter(p => p.status === "approved");
+    const allItems = [...products, ...approvedPosts];
+    const filtered = filter === 'all' ? allItems : allItems.filter(p => p.category.toLowerCase() === filter.toLowerCase());
 
-        const approvedPosts = productPosts.filter(p => p.status === "approved");
-        const allItems = [...products, ...approvedPosts];
-        const filtered = filter === 'all' ? allItems : allItems.filter(p => p.category.toLowerCase() === filter.toLowerCase());
+    if(filtered.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding: 40px; color:#64748b;">No items cataloged under this target selection marker matching context.</p>`;
+        return;
+    }
 
-        if(filtered.length === 0) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding: 40px; color:#64748b;">No items cataloged under this target selection marker matching context.</p>`;
-            return;
-        }
+    filtered.forEach(p => {
+        const isFavorite = wishlist.includes(p.id) ? 'active' : '';
+        const starRow = generateStarRatingHTML(p.rating || 4.0);
+        
+        const outOfStock = (p.stock !== undefined && p.stock <= 0);
+        const btnText = outOfStock ? 'Out of Stock' : 'Add To Cart';
+        const btnAttr = outOfStock ? 'disabled style="background:#cbd5e1; cursor:not-allowed;"' : '';
+        const stockDisplay = p.stock !== undefined ? `<small style="display:block; color:#64748b; margin-top:5px;">Stock: ${p.stock} units</small>` : '';
 
-        filtered.forEach(p => {
-            const isFavorite = wishlist.includes(p.id) ? 'active' : '';
-            const starRow = generateStarRatingHTML(p.rating || 4.0);
-            
-            // Dynamic Stock checking
-            const outOfStock = (p.stock !== undefined && p.stock <= 0);
-            const btnText = outOfStock ? 'Out of Stock' : 'Add To Cart';
-            const btnAttr = outOfStock ? 'disabled style="background:#cbd5e1; cursor:not-allowed;"' : '';
-            const stockDisplay = p.stock !== undefined ? `<small style="display:block; color:#64748b; margin-top:5px;">Stock: ${p.stock} units</small>` : '';
-
-            const card = document.createElement("div");
-            card.className = "product-card"; 
-            card.innerHTML = `
-                <button class="wishlist-btn ${isFavorite}" onclick="toggleWishlist('${p.id}')">❤️</button>
-                <div class="product-img-wrapper">
-                    <img src="${p.image}" alt="${p.title}" onclick="quickView('${p.id}')" style="cursor:pointer;">
-                </div>
-                <div class="product-details">
-                    <h3>${p.title}</h3>
-                    ${starRow}
-                    <p>${p.description}</p>
-                    <div class="price-wrapper">
-                        <div>
-                            <span class="price">₦${p.price.toLocaleString()}</span>
-                            ${stockDisplay}
-                        </div>
-                        <button class="btn-main" onclick="addToCart('${p.id}')" ${btnAttr}>${btnText}</button>
+        const card = document.createElement("div");
+        card.className = "product-card"; 
+        card.innerHTML = `
+            <button class="wishlist-btn ${isFavorite}" onclick="toggleWishlist('${p.id}')">❤️</button>
+            <div class="product-img-wrapper">
+                <img src="${p.image}" alt="${p.title}" onclick="quickView('${p.id}')" style="cursor:pointer;">
+            </div>
+            <div class="product-details">
+                <h3>${p.title}</h3>
+                ${starRow}
+                <p>${p.description}</p>
+                <div class="price-wrapper">
+                    <div>
+                        <span class="price">₦${p.price.toLocaleString()}</span>
+                        ${stockDisplay}
                     </div>
+                    <button class="btn-main" onclick="addToCart('${p.id}')" ${btnAttr}>${btnText}</button>
                 </div>
-            `;
-            grid.appendChild(card);
-        });
-    }, 600); // 600ms delay to simulate loading speed
+            </div>
+        `;
+        grid.appendChild(card);
+    });
 }
 
 function filterProducts(category, element) {
@@ -1165,12 +1211,11 @@ function quickView(id) {
 }
 
 // ==========================================
-// 6. TRANSACTION CART DATA STACKS
+// 7. TRANSACTION PROCESSING DATA PIPES
 // ==========================================
 function addToCart(id) {
     const product = [...products, ...productPosts].find(p => p.id === id);
     
-    // Check against inventory
     if (product && product.stock !== undefined) {
         const existingItem = cart.find(i => i.id === id);
         const currentQty = existingItem ? existingItem.qty : 0;
@@ -1186,7 +1231,7 @@ function addToCart(id) {
     
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartBadge();
-    Swal.fire("Added", "Product pushed safely into local shopping session stack.", "success");
+    Swal.fire("Added", "Product pushed safely into shopping session stack.", "success");
 }
 
 function updateCartBadge() {
@@ -1209,7 +1254,7 @@ function renderCart() {
 
     if (cart.length === 0) {
         cartItemsDiv.innerHTML = "<div style='text-align:center; padding: 40px; color:#64748b;'>Your runtime shopping session index canvas array structure is bare.</div>";
-        activeCoupon = null; // reset coupon
+        activeCoupon = null; 
         return;
     }
 
@@ -1234,11 +1279,10 @@ function renderCart() {
         }
     });
 
-    // Discount Calculation
     let discountAmount = 0;
     if (activeCoupon) {
         discountAmount = activeCoupon.type === 'percentage' ? (subtotal * activeCoupon.value) : activeCoupon.value;
-        discountAmount = Math.min(discountAmount, subtotal); // Don't allow negative totals
+        discountAmount = Math.min(discountAmount, subtotal); 
     }
     
     let finalTotal = subtotal - discountAmount;
@@ -1270,15 +1314,11 @@ function renderCart() {
     cartItemsDiv.appendChild(summary);
 }
 
-// ==========================================
-// 7. PROCESSING PAYMENT PLATFORMS
-// ==========================================
 function startCheckout(calculatedTotal) {
     if (cart.length === 0) return Swal.fire("Empty Stack", "Add structural objects target parameters first.", "warning");
     if (!currentUser) return openModal('authModal');
 
     document.getElementById("paymentTotal").innerText = `Total Billing Frame Sum: ₦${calculatedTotal.toLocaleString()}`;
-    // Store exact total globally temporarily for order processing
     document.getElementById("paymentTotal").dataset.amount = calculatedTotal; 
     openModal('checkoutModal');
 }
@@ -1288,102 +1328,129 @@ function handlePayment(event) {
     document.getElementById("checkoutForm").style.display = "none";
     document.getElementById("paymentLoading").style.display = "block";
 
-    setTimeout(() => {
-        processFinalOrder();
+    setTimeout(async () => {
+        await processFinalOrder();
     }, 3500);
 }
 
-function processFinalOrder() {
+async function processFinalOrder() {
     const orderId = "ORD-" + Math.floor(10000 + Math.random() * 90000);
     const finalAmountPaid = parseFloat(document.getElementById("paymentTotal").dataset.amount);
     
     const newOrder = {
         id: orderId,
-        userEmail: currentUser.email,
-        name: document.getElementById("custName").value,
-        address: document.getElementById("custAddress").value,
-        phone: document.getElementById("custPhone").value,
-        items: [...cart],
-        totalPaid: finalAmountPaid,
-        timestamp: new Date().toISOString(), // Use ISO string for accurate time tracking
+        customer_email: currentUser.email,
+        customer_name: document.getElementById("custName").value,
+        shipping_address: document.getElementById("custAddress").value,
+        phone_number: document.getElementById("custPhone").value,
+        items_json: [...cart], 
+        total_paid: finalAmountPaid,
+        created_at: new Date().toISOString()
     };
 
-    orders.push(newOrder);
-    localStorage.setItem("orders", JSON.stringify(orders));
-    
-    // Decrement Stock
-    cart.forEach(cartItem => {
-        const pIndex = products.findIndex(p => p.id === cartItem.id);
-        if(pIndex > -1 && products[pIndex].stock !== undefined) {
-            products[pIndex].stock -= cartItem.qty;
+    try {
+        // Post transaction data structure to Supabase logs table
+        const { error: orderError } = await _supabase
+            .from('orders')
+            .insert([newOrder]);
+
+        if (orderError) throw orderError;
+
+        // Perform inventory delta decrement queries across active tables
+        for (let cartItem of cart) {
+            const matchedProduct = [...products, ...productPosts].find(p => p.id === cartItem.id);
+            if (matchedProduct) {
+                const targetStock = Math.max(0, matchedProduct.stock - cartItem.qty);
+                await _supabase
+                    .from('products')
+                    .update({ stock: targetStock })
+                    .eq('id', cartItem.id);
+            }
         }
-    });
-    
-    cart = [];
-    activeCoupon = null; // Reset discount
-    localStorage.setItem("cart", JSON.stringify(cart));
-    updateCartBadge();
+        
+        cart = [];
+        activeCoupon = null; 
+        localStorage.setItem("cart", JSON.stringify(cart));
+        updateCartBadge();
 
-    closeModal('checkoutModal');
-    
-    document.getElementById("checkoutForm").style.display = "block";
-    document.getElementById("paymentLoading").style.display = "none";
-    document.getElementById("checkoutForm").reset();
+        closeModal('checkoutModal');
+        
+        document.getElementById("checkoutForm").style.display = "block";
+        document.getElementById("paymentLoading").style.display = "none";
+        document.getElementById("checkoutForm").reset();
 
-    Swal.fire({
-        title: "Transaction Verified",
-        html: `Order record tracking logged manually inside global node frame.<br><br><strong>Order Tracking Frame Link Key:</strong><br><span style="color:#2563eb; font-size:1.2rem;">${orderId}</span>`,
-        icon: "success"
-    });
-    
-    showSection('shop');
+        // Refresh internal dynamic memory profiles
+        await syncDataFromSupabase();
+        renderProducts('all');
+
+        Swal.fire({
+            title: "Transaction Verified",
+            html: `Order record tracking logged manually inside global database architecture.<br><br><strong>Order Tracking Frame Link Key:</strong><br><span style="color:#2563eb; font-size:1.2rem;">${orderId}</span>`,
+            icon: "success"
+        });
+        
+        showSection('shop');
+    } catch (err) {
+        Swal.fire("Order Finalization Aborted", err.message, "error");
+    }
 }
 
 // ==========================================
-// 8. ORDER VERIFICATION TRACKING SYSTEM
+// 8. LOGISTICS TRACKING MATRIX ENGINES
 // ==========================================
-function trackOrder() {
+async function trackOrder() {
     const targetId = document.getElementById("orderIdInput").value.trim();
     const output = document.getElementById("trackResult");
     if(!targetId) return Swal.fire("Context Guard", "Provide validation reference array indexes.", "warning");
 
-    const record = orders.find(o => o.id === targetId);
-    if(!record) {
-        output.innerHTML = `<p style="color:var(--danger); font-weight:600;">System directory configuration error matching key parameters: "${targetId}" mismatch frame structure.</p>`;
-        return;
+    try {
+        // Query database context nodes directly for live location parameters tracking profiles
+        const { data: orderLookup, error } = await _supabase
+            .from('orders')
+            .select('*')
+            .eq('id', targetId);
+
+        if (error) throw error;
+
+        if(!orderLookup || orderLookup.length === 0) {
+            output.innerHTML = `<p style="color:var(--danger); font-weight:600;">System directory configuration error matching key parameters: "${targetId}" mismatch frame structure.</p>`;
+            return;
+        }
+
+        const record = orderLookup[0];
+        const orderTime = new Date(record.created_at).getTime();
+        const now = new Date().getTime();
+        const minutesElapsed = (now - orderTime) / 1000 / 60;
+        
+        let liveStatus, liveIcon;
+        if (minutesElapsed < 2) {
+            liveStatus = "Vendor is packaging your items";
+            liveIcon = "📦";
+        } else if (minutesElapsed < 5) {
+            liveStatus = "Out with Dispatch Rider";
+            liveIcon = "🏍️";
+        } else {
+            liveStatus = "Delivered Successfully";
+            liveIcon = "✅";
+        }
+
+        const formattedDate = new Date(record.created_at).toLocaleString();
+
+        output.innerHTML = `
+            <div style="background:#f8fafc; border-left:4px solid var(--accent); padding:15px; border-radius:4px;">
+                <h4 style="color:var(--dark); margin-bottom:5px;">Package Identity Verified</h4>
+                <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Target Destination Node:</strong> ${record.shipping_address}</p>
+                <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Log Registration:</strong> ${formattedDate}</p>
+                <p style="font-size:0.95rem; color:var(--accent); font-weight:700;"><strong>Operational State:</strong> ${liveIcon} ${liveStatus}</p>
+            </div>
+        `;
+    } catch (err) {
+        Swal.fire("Tracking Routine Fault", err.message, "error");
     }
-
-    // Dynamic Delivery Stages Math
-    const orderTime = new Date(record.timestamp).getTime();
-    const now = new Date().getTime();
-    const minutesElapsed = (now - orderTime) / 1000 / 60;
-    
-    let liveStatus, liveIcon;
-    if (minutesElapsed < 2) {
-        liveStatus = "Vendor is packaging your items";
-        liveIcon = "📦";
-    } else if (minutesElapsed < 5) {
-        liveStatus = "Out with Dispatch Rider";
-        liveIcon = "🏍️";
-    } else {
-        liveStatus = "Delivered Successfully";
-        liveIcon = "✅";
-    }
-
-    const formattedDate = new Date(record.timestamp).toLocaleString();
-
-    output.innerHTML = `
-        <div style="background:#f8fafc; border-left:4px solid var(--accent); padding:15px; border-radius:4px;">
-            <h4 style="color:var(--dark); margin-bottom:5px;">Package Identity Verified</h4>
-            <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Target Node Point:</strong> ${record.address}</p>
-            <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Log Registration:</strong> ${formattedDate}</p>
-            <p style="font-size:0.95rem; color:var(--accent); font-weight:700;"><strong>Operational State:</strong> ${liveIcon} ${liveStatus}</p>
-        </div>
-    `;
 }
 
 // ==========================================
-// 9. ADMIN MANAGEMENT (Unchanged)
+// 9. ADMIN PANEL & SELLER MANAGEMENT DECK
 // ==========================================
 function renderAdminPanel() {
     const tbody = document.getElementById("adminTableBody");
@@ -1400,7 +1467,7 @@ function renderAdminPanel() {
         row.style.borderBottom = "1px solid #e2e8f0";
         row.innerHTML = `
             <td style="padding:12px; font-size:0.85rem; font-family:monospace;">${post.id}</td>
-            <td>${post.seller}</td>
+            <td>${post.seller_identity || 'Anonymous'}</td>
             <td>${post.title}</td>
             <td>₦${post.price.toLocaleString()}</td>
             <td style="font-weight:700; color:${post.status === 'approved' ? 'var(--accent)' : 'var(--secondary)'}">${post.status.toUpperCase()}</td>
@@ -1412,38 +1479,64 @@ function renderAdminPanel() {
     });
 }
 
-document.getElementById("postForm").onsubmit = function(event) {
+// Intercept marketplace forms and pass directly down to database pipeline
+document.getElementById("postForm").onsubmit = async function(event) {
     event.preventDefault();
     const newListing = {
         id: "PRD-" + Math.floor(10000 + Math.random() * 90000),
-        seller: document.getElementById("sellerName").value,
+        seller_identity: document.getElementById("sellerName").value,
         title: document.getElementById("postTitle").value,
         category: document.getElementById("postCategory").value,
         price: parseFloat(document.getElementById("postPrice").value),
         image: document.getElementById("postImage").value || "https://images.unsplash.com/photo-1576871333019-220ef346dd92?auto=format&fit=crop&w=400",
         description: "User supplied vendor item portfolio selection bundle.",
         status: "pending",
-        stock: 5, // Default stock for user uploads
-        rating: 5.0 // Default rating
+        stock: 5, 
+        rating: 5.0,
+        is_base_product: false
     };
 
-    productPosts.push(newListing);
-    localStorage.setItem("productPosts", JSON.stringify(productPosts));
-    document.getElementById("postForm").reset();
-    closeModal('postModal');
-    Swal.fire("Listing Complete", "Product package forwarded down tracking sequence processing streams awaiting administrative review checks.", "info");
+    try {
+        const { error } = await _supabase
+            .from('products')
+            .insert([newListing]);
+
+        if (error) throw error;
+
+        document.getElementById("postForm").reset();
+        closeModal('postModal');
+        
+        await syncDataFromSupabase();
+        renderAdminPanel();
+        
+        Swal.fire("Listing Complete", "Product package forwarded down tracking sequence processing streams awaiting administrative review checks.", "info");
+    } catch (err) {
+        Swal.fire("Listing Failed", err.message, "error");
+    }
 };
 
-function approvePost(positionalIndex) {
-    productPosts[positionalIndex].status = "approved";
-    localStorage.setItem("productPosts", JSON.stringify(productPosts));
-    renderAdminPanel();
-    renderProducts('all');
-    Swal.fire("Verified System Push", "Listing configuration values updated live to runtime array targets.", "success");
+async function approvePost(positionalIndex) {
+    const targetProduct = productPosts[positionalIndex];
+    
+    try {
+        const { error } = await _supabase
+            .from('products')
+            .update({ status: "approved" })
+            .eq('id', targetProduct.id);
+
+        if (error) throw error;
+
+        await syncDataFromSupabase();
+        renderAdminPanel();
+        renderProducts('all');
+        Swal.fire("Verified System Push", "Listing configuration values updated live to runtime array targets.", "success");
+    } catch (err) {
+        Swal.fire("Update Collision Error", err.message, "error");
+    }
 }
 
 // ==========================================
-// 10. WINDOW INTERFACE VISIBILITY MODAL ANIMATIONS TIE PIPELINE
+// 10. SYSTEM MODAL BOX VISIBILITY INTERRUPTS
 // ==========================================
 function openModal(targetModalIdentity) {
     const targetElement = document.getElementById(targetModalIdentity);
