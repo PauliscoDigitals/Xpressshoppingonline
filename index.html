@@ -38,6 +38,7 @@
       --text-title: #ffffff;
       --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
+    
 
     * {
       box-sizing: border-box;
@@ -56,7 +57,197 @@
     /* ==========================================
        2. STICKY HEADER & SEARCH ARCHITECTURE
        ========================================== */
-    header {
+     /* Mobile view default state hidden */
+/* ========================================================
+   NAVBAR & LINKS DESKTOP LAYOUT (BASE STYLES)
+   ======================================================== */
+
+/* 1. Remove browser bullets and line up items horizontally */
+.nav-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Style the navigation anchor text cleanly */
+.nav-links li a {
+    text-decoration: none;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.nav-links li a:hover, 
+.nav-links li a.active {
+    color: var(--accent, #f59e0b); /* Highlight color on hover/active */
+}
+
+/* 2. Hide the mobile trigger button by default on desktop viewports */
+.menu-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+/* Ensure the wrapper displays cleanly next to your brand name */
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+/* Hide duplicate structural text components if necessary */
+.navbar .logo {
+    display: none; /* Hides the redundant logo text since "Xpress Shopping" H1 is already visible */
+}
+
+
+/* ========================================================
+   RESPONSIVE LAYOUT CONTEXT INTERCEPT (MOBILE SCREEN)
+   ======================================================== */
+@media (max-width: 768px) {
+    /* Reveal the mobile menu icon trigger */
+    .menu-toggle {
+        display: block;
+    }
+
+    /* Transform the layout link array into a hidden, absolute dropdown drawer stack */
+    .nav-links {
+        display: none; 
+        flex-direction: column;
+        gap: 15px;
+        position: absolute;
+        top: 65px;
+        left: 0;
+        width: 100%;
+        background-color: #1a42af; /* Color matched to your header background color array */
+        padding: 20px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        z-index: 999;
+    }
+
+    /* Re-display structural text inside mobile context views gracefully if needed */
+    .navbar .logo {
+        display: block;
+    }
+
+    /* The modifier rule injected dynamically via your toggleMobileMenu() JavaScript function */
+    .nav-links.active {
+        display: flex;
+    }
+}
+/* ========================================================
+   VERTICAL BUTTON DROPDOWN NAVIGATION COMPONENT
+   ======================================================== */
+
+/* 1. Relative Container anchor positioning matrix */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* 2. Styling the trigger button to match your navbar pills */
+.dropdown-trigger-btn {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.dropdown-trigger-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: #ffffff;
+}
+
+.arrow-indicator {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+/* 3. Dropdown Menu Vector Configuration (Forces Vertical Layout) */
+.nav-dropdown .nav-links-vertical {
+    display: none; /* Keeps menu hidden until invoked */
+    flex-direction: column;
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 200px;
+    background-color: #1a42af; /* Deep blue theme matching your header color profile */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    padding: 8px 0;
+    margin: 0;
+    list-style: none;
+    z-index: 1000;
+}
+
+/* 4. Formatting list item nodes inside the popup window vertical alignment */
+.nav-links-vertical li {
+    width: 100%;
+}
+
+.nav-links-vertical li a {
+    display: block;
+    padding: 12px 20px;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+/* Hover effects for item lines inside your popup drawer */
+.nav-links-vertical li a:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #f59e0b; /* Yellow/Amber highlight text tint */
+}
+
+/* Visually flags the current active subpage path node */
+.nav-links-vertical li a.active {
+    color: #f59e0b;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid #f59e0b;
+}
+
+/* ========================================================
+   TRIGGER MATRICES (HOVER & CLICK INTERACTION HANDLERS)
+   ======================================================== */
+
+/* Desktop Hover Interaction Model */
+@media (min-width: 769px) {
+    .nav-dropdown:hover .nav-links-vertical {
+        display: flex;
+    }
+    .nav-dropdown:hover .arrow-indicator {
+        transform: rotate(180deg);
+    }
+}
+
+/* JavaScript Class Override Trigger Pattern (Touch/Click Routing) */
+.nav-dropdown .nav-links-vertical.active {
+    display: flex !important;
+}
+.nav-dropdown.active-toggle .arrow-indicator {
+    transform: rotate(180deg);
+}
+
+       header {
       background-color: var(--primary);
       color: white;
       padding: 15px 20px;
@@ -86,7 +277,7 @@
       font-weight: 800;
       letter-spacing: -0.5px;
     }
-
+   
     .search-container {
       width: 100%;
       max-width: 500px;
@@ -183,7 +374,19 @@
       font-size: 0.65rem;
       color: #cbd5e1;
     }
-
+.btn-settings-logout {
+    background-color: #dc2626;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.btn-settings-logout:hover {
+    background-color: #b91c1c;
+}
     /* Wishlist Count Indicator Badge */
     .wishlist-count-badge {
       background: var(--danger);
@@ -498,6 +701,23 @@
   <div class="header-container">
     <div class="header-top">
       <h1 class="brand-title">Xpress Shopping</h1>
+      <nav class="navbar">
+   <nav class="navbar">
+    <!-- Main Dropdown Toggle Wrapper Container -->
+    <div class="nav-dropdown" id="navDropdownContainer">
+        <button class="dropdown-trigger-btn" onclick="toggleDropdownMenu(event)">
+             <span class="arrow-indicator">▼</span>
+        </button>
+        
+        <!-- The Vertical Link Drawer Stack -->
+        <ul class="nav-links-vertical" id="navMenu">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="services.html">Services</a></li>
+            <li><a href="contact.html">Contact</a></li>
+        </ul>
+    </div>
+</nav>
       
       <div class="nav-auth-group" id="nav-auth-group">
         <button class="btn-nav" onclick="showSection('shop')">🛍️ Shop</button>
@@ -638,15 +858,16 @@
                 <button class="btn-main" style="background: var(--danger); padding: 6px 12px; font-size: 0.85rem;" onclick="flushAppStorage()">⚠️ Purge Session Cache</button>
             </div>
         </div>
+        <div class="settings-logout-zone" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
+    <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 10px;">Finished with your session?</p>
+    <button type="button" class="btn-settings-logout" onclick="triggerSecureLogout()">
+        🚪 Securely Log Out
+    </button>
+</div>
         </div>
 
     </div>
 </div>            
-           
-        </div>
-
-    </div>
-</div>
 
     <div id="adminSection" class="app-section" style="display:none;">
         <h2 style="margin-bottom: 15px;">Admin Approval Panel</h2>
@@ -765,6 +986,7 @@
 </footer>
 
 <script>
+   
 // ==========================================
 // 1. SYSTEM INITIALIZATION & CLOUD BACKEND DATA CONFIG
 // ==========================================
@@ -1028,14 +1250,38 @@ function updateAuthUI() {
     const userInitial = document.getElementById("userInitial");
     const userStatus = document.getElementById("userStatus");
     const ordersBtn = document.getElementById("ordersNavBtn");
-    
+
     const trackingBtn = document.getElementById('adminNavBtn');
     if (trackingBtn) trackingBtn.remove();
 
     if (currentUser) {
-        loginBtn.innerText = "Logout";
-        loginBtn.style.background = "var(--danger)";
-        loginBtn.onclick = logout;
+        // 1. Hide the login button because they are logged in
+        loginBtn.style.display = "none";
+        
+        if (ordersBtn) ordersBtn.style.display = "inline-flex";
+        if (userBadge) {
+            userBadge.style.display = "flex";
+            // Updated to fallback on lowercase display_name setup
+            displayUsername.innerText = currentUser.display_name || currentUser.email.split('@')[0];
+            userInitial.innerText = currentUser.email[0].toUpperCase();
+            userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
+        }
+    } else {
+        // 2. When NO user is logged in, show the Login button normally
+        loginBtn.style.display = "inline-flex";
+        loginBtn.innerText = "Login";
+        loginBtn.style.background = "var(--secondary)"; // Restores original blue/purple look
+
+        if (ordersBtn) ordersBtn.style.display = "none";
+        if (userBadge) userBadge.style.display = "none";
+    } // <-- Closes the else block
+} // <-- Closes the updateAuthUI function        
+        // Ensure clicking it re-triggers your normal login popup modal
+        loginBtn.onclick = () => openAuthModal(); 
+
+        if (ordersBtn) ordersBtn.style.display = "none";
+        if (userBadge) userBadge.style.display = "none";
+     
         
         if (ordersBtn) ordersBtn.style.display = "inline-flex";
         if (userBadge) {
@@ -1055,7 +1301,7 @@ function updateAuthUI() {
             adminBtn.onclick = () => showSection('admin');
             document.getElementById('nav-auth-group').insertBefore(adminBtn, loginBtn);
         }
-    } else {
+     else {
         loginBtn.innerText = "Login / Register";
         loginBtn.style.background = "var(--secondary)";
         loginBtn.onclick = () => openModal('authModal');
@@ -1064,7 +1310,7 @@ function updateAuthUI() {
         if (ordersBtn) BasinElement = "none";
         if (ordersBtn) ordersBtn.style.display = "none";
     }
-}
+
 
 // ==========================================
 // 5. SETTINGS CONTROL ARCHITECTURE & SYNC
@@ -1600,6 +1846,56 @@ function closeModal(targetModalIdentity) {
 		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
 	}
 	// ]]>
+   function toggleDropdownMenu(event) {
+    event.stopPropagation(); // Prevents instant bubbling close execution hooks
+    const menu = document.getElementById("navMenu");
+    const container = document.getElementById("navDropdownContainer");
+    
+    menu.classList.toggle("active");
+    container.classList.toggle("active-toggle");
+}
+
+// Global window event listener to hide the vertical menu instantly if a user clicks outside of it
+window.addEventListener("click", () => {
+    const menu = document.getElementById("navMenu");
+    const container = document.getElementById("navDropdownContainer");
+    
+    if (menu && menu.classList.contains("active")) {
+        menu.classList.remove("active");
+        container.classList.remove("active-toggle");
+    }
+});
+function triggerSecureLogout() {
+    Swal.fire({
+        title: "Confirm Log Out?",
+        text: "Are you sure you want to terminate your active shopping session?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626", // Red danger color
+        cancelButtonColor: "#6b7280",  // Muted gray
+        confirmButtonText: "Yes, Log Me Out",
+        cancelButtonText: "Stay Logged In",
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Clear current user tracking variables
+            localStorage.removeItem("currentUser");
+            currentUser = null;
+
+            Swal.fire({
+                title: "Logged Out",
+                text: "Your account session has been cleared safely.",
+                icon: "success",
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                // Refresh layout elements or redirect back to shop home panel
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+                showSection('shop'); 
+            });
+        }
+    });
+}
 </script>
 </body>
 </html>
