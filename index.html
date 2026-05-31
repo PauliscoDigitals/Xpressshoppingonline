@@ -1407,14 +1407,21 @@ function updateAuthUI() {
             userInitial.innerText = currentUser.email[0].toUpperCase();
             userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
         }
-    } else {
-        // 2. When NO user is logged in, show the Login button normally
+   } else {
+        // When NO user is logged in, show the Login button normally
         loginBtn.style.display = "inline-flex";
         loginBtn.innerText = "Login";
-        loginBtn.style.background = "var(--secondary)"; // Restores original blue/purple look
+        loginBtn.style.background = "var(--secondary)";
+
+        // Add this line to explicitly handle opening the modal you provided:
+        loginBtn.onclick = function() {
+            openModal('authModal');
+        };
 
         if (ordersBtn) ordersBtn.style.display = "none";
         if (userBadge) userBadge.style.display = "none";
+    }    
+}
     } // <-- Closes the else block
 } // <-- Closes the updateAuthUI function        
         // Ensure clicking it re-triggers your normal login popup modal
