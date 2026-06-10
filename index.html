@@ -800,7 +800,7 @@
     <div class="header-top">
       <h1 class="brand-title">Xpress Shopping</h1>
       <nav class="navbar">
-   <nav class="navbar">
+  
     <!-- Main Dropdown Toggle Wrapper Container -->
     <div class="nav-dropdown" id="navDropdownContainer">
         <button class="dropdown-trigger-btn" onclick="toggleDropdownMenu(event)">
@@ -1084,25 +1084,8 @@
 </footer>
 
 <script>
-   // Line 975: <script>
-
-// PASTE THE LOADER FUNCTIONS HERE (LINE 976)
-function showLoader(customMessage = "Synchronizing Data...") {
-    const loader = document.getElementById("globalLoader");
-    if (loader) {
-        loader.querySelector(".loading-status-text").innerText = customMessage;
-        loader.style.display = "flex";
-    }
-}
-
-function hideLoader() {
-    const loader = document.getElementById("globalLoader");
-    if (loader) {
-        loader.style.display = "none";
-    }
-}
 // ==========================================
-// 1. SYSTEM INITIALIZATION & CLOUD BACKEND DATA CONFIG
+// 1. SYSTEM INITIALIZATION & CLOUD CONFIG
 // ==========================================
 const SUPABASE_URL = "https://trrtcmxqacepbhacipdr.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_7cnEJer20hKX8Zrwt8g_Og_7db-ELlb";
@@ -1114,20 +1097,71 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let products = [];
 let productPosts = [];
 let orders = [];
-let cart = JSON.parse(localStorage.getItem("cart")) || []; // Cart states naturally map to local browser sessions until final transaction checkout
+let cart = JSON.parse(localStorage.getItem("cart")) || []; 
 let wishlist = JSON.parse(localStorage.getItem("xpress_wishlist")) || [];
 let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
 let isLoginMode = true;
 let activeCoupon = null;
-let isSubmitting = false; // <-- ADD THIS LINE HERE
+let isSubmitting = false; 
+
 // Coupon Verification Reference Tables
 const COUPON_DATABASE = {
     "SAVE10": { type: "percentage", value: 0.10 },
     "XPRESS2K": { type: "flat", value: 2000 }
 };
 
+// ==========================================
+// 2. CORE INTERFACE RENDER CORES (UI STATUS)
+// ==========================================
+function updateAuthUI() {
+    const loginBtn = document.getElementById("loginNavBtn");
+    const userBadge = document.getElementById("userBadge");
+    const displayUsername = document.getElementById("displayUsername");
+    const userInitial = document.getElementById("userInitial");
+    const userStatus = document.getElementById("userStatus");
+    const ordersBtn = document.getElementById("ordersNavBtn");
+
+    const trackingBtn = document.getElementById('adminNavBtn');
+    if (trackingBtn) trackingBtn.remove();
+    if (!loginBtn) return;
+
+    if (currentUser) {
+        // --- LOGGED IN STATE ---
+        loginBtn.style.display = "none";
+        if (ordersBtn) ordersBtn.style.display = "inline-flex";
+        if (userBadge) {
+            userBadge.style.display = "flex";
+            displayUsername.innerText = currentUser.display_name || currentUser.email.split('@')[0];
+            userInitial.innerText = currentUser.email[0].toUpperCase();
+            userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
+        }
+
+        if (currentUser.role === 'admin') {
+            const adminBtn = document.createElement('button');
+            adminBtn.id = 'adminNavBtn';
+            adminBtn.className = 'btn-nav';
+            adminBtn.style.background = '#10b981';
+            adminBtn.innerText = '⚙️ Admin Deck';
+            adminBtn.onclick = () => showSection('admin');
+            const authGroup = document.getElementById('nav-auth-group');
+            if (authGroup) authGroup.insertBefore(adminBtn, loginBtn);
+        }
+    } else {
+        // --- LOGGED OUT STATE ---
+        loginBtn.style.display = "inline-flex";
+        loginBtn.innerText = "Login / Register";
+        loginBtn.style.background = "var(--secondary)";
+        loginBtn.onclick = () => openModal('authModal');
+       
+        if (userBadge) userBadge.style.display = "none";
+        if (ordersBtn) ordersBtn.style.display = "none";
+    }
+}
+
+// ==========================================
+// 3. LIFECYCLE ROUTERS (Onload & Synchronization)
+// ==========================================
 window.onload = async () => {
-    // Initialize Theme configuration presets
     if (localStorage.getItem('xpress_theme') === 'dark') {
         document.body.classList.add('dark-theme');
     }
@@ -1136,19 +1170,15 @@ window.onload = async () => {
     updateCartBadge();
     updateWishlistUI();
 
-    // FIX 1: Bind the auth form submission directly to prevent standard page-reload behavior
     document.getElementById("authForm")?.addEventListener("submit", handleAuth);
     
-    // Asynchronously fetch cloud data records stream
     showLoadingSkeletons("products", 6);
     await syncDataFromSupabase();
     renderProducts('all');
 };
 
-// Unified Data Capture Synchronization Hook
 async function syncDataFromSupabase() {
     try {
-        // 1. Load entire product schema ecosystem catalog data
         const { data: fetchedProducts, error: prodError } = await _supabase
             .from('products')
             .select('*');
@@ -1156,12 +1186,10 @@ async function syncDataFromSupabase() {
         if (prodError) throw prodError;
 
         if (fetchedProducts) {
-            // Segregate base inventory sets from user marketplace listings cleanly via database flags
             products = fetchedProducts.filter(p => p.is_base_product === true);
             productPosts = fetchedProducts.filter(p => p.is_base_product === false);
         }
 
-        // 2. Load historical processing orders structural context frame logs
         const { data: fetchedOrders, error: ordError } = await _supabase
             .from('orders')
             .select('*');
@@ -1175,8 +1203,42 @@ async function syncDataFromSupabase() {
 }
 
 // ==========================================
-// 2. UTILITY MODULES & PREFERENCES
+// 4. UTILITY MODULES & PREFERENCES
 // ==========================================
+function showLoader(customMessage = "Synchronizing Data...") {
+    const loader = document.getElementById("globalLoader");
+    if (loader) {
+        loader.querySelector(".loading-status-text").innerText = customMessage;
+        loader.style.display = "flex";
+    }
+}
+
+// Global window event listener to close drop-down menus safely
+window.addEventListener("click", () => {
+    const menu = document.getElementById("navMenu");
+    const container = document.getElementById("navDropdownContainer");
+    
+    if (menu && menu.classList.contains("active")) {
+        menu.classList.remove("active");
+        container.classList.remove("active-toggle");
+    }
+});
+
+function toggleDropdownMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById("navMenu");
+    const container = document.getElementById("navDropdownContainer");
+    if (menu && container) {
+        menu.classList.toggle("active");
+        container.classList.toggle("active-toggle");
+    }
+}
+
+function hideLoader() {
+    const loader = document.getElementById("globalLoader");
+    if (loader) loader.style.display = "none";
+}
+
 function toggleTheme() {
     const isDark = document.body.classList.toggle('dark-theme');
     localStorage.setItem('xpress_theme', isDark ? 'dark' : 'light');
@@ -1248,16 +1310,13 @@ function showLoadingSkeletons(targetContainerId, cardCount = 6) {
 }
 
 // ==========================================
-// 3. APPLICATION ROUTING & NAVIGATION
+// 5. APPLICATION ROUTING & NAVIGATION
 // ==========================================
-
 function showSection(sectionId) {
-    
     showLoader("Loading requested dashboard...");
-setTimeout(() => {
-       
-    hideLoader();
-    }, 400); // 400 milliseconds provides a clean, responsive visual flow
+    setTimeout(() => {
+        hideLoader();
+    }, 400);
 
     const sections = ['shopSection', 'ordersSection', 'cartSection', 'trackSection', 'adminSection', 'settingsSection'];
     sections.forEach(id => {
@@ -1276,7 +1335,7 @@ setTimeout(() => {
 }
 
 // ==========================================
-// 4. CLOUD BACKEND SECURE AUTHENTICATION SYSTEM
+// 6. SECURE AUTHENTICATION DRAWER ENGINES
 // ==========================================
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
@@ -1288,36 +1347,30 @@ function toggleAuthMode() {
 
 async function handleAuth(e) {
     e.preventDefault();
-    if (isSubmitting) return; // Prevent double-submission spam
+    if (isSubmitting) return; 
     isSubmitting = true;
 
     const emailInput = document.getElementById("authEmail")?.value.trim().toLowerCase();
     const nameInput = document.getElementById("authName")?.value.trim();
     const phoneInput = document.getElementById("authPhone")?.value.trim();
     
-    // NOTE: Replace this mock authentication logic with your actual password verification / Supabase Auth if using it
     try {
-        // 1. Check if the profile already exists in our app_users database
         let { data: userProfile, error: fetchError } = await _supabase
             .from('app_users')
             .select('*')
             .eq('email', emailInput)
             .single();
 
-        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // Ignore "no rows found" error
+        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
 
         if (userProfile) {
-            // 🛑 SECURITY CHECK: If the admin panel marked this node as suspended, block entry!
             if (userProfile.status === 'suspended') {
                 Swal.fire("Access Denied", "Your account has been suspended by system administration.", "error");
                 isSubmitting = false;
                 return;
             }
-            
-            // Log them in with their live database credentials
             currentUser = userProfile;
         } else {
-            // 🆕 REGISTRATION: If they don't exist yet, provision their database record automatically
             const newProfile = {
                 email: emailInput,
                 display_name: nameInput || emailInput.split('@')[0],
@@ -1334,108 +1387,50 @@ async function handleAuth(e) {
             currentUser = newProfile;
         }
 
-        // 2. Commit session to local storage to persist the user interface state
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
-        
         Swal.fire("Welcome!", `Authenticated successfully as ${currentUser.display_name}`, "success");
-        updateAuthUI(); // Trigger your UI element updates
-        
-        // Hide auth modals/drawers if you have them open
-        document.getElementById("authModal")?.classList.remove("active");
+        updateAuthUI();
+        closeModal("authModal");
 
     } catch (err) {
-        console.error("Auth pipeline execution failure:", err.message);
+        console.error("Auth failure:", err.message);
         Swal.fire("Authentication Error", err.message, "error");
     } finally {
         isSubmitting = false;
     }
-}function finalizeLogin() {
-    localStorage.setItem("currentUser", JSON.stringify(currentUser));
-    closeModal('authModal');
-    updateAuthUI();
-    renderProducts('all'); 
-    Swal.fire("Access Authorized", `Welcome backend active token session: ${currentUser.email.split('@')[0]}`, "success");
 }
 
-function logout() {
-    currentUser = null;
-    localStorage.removeItem("currentUser");
-    updateAuthUI();
-    showSection('shop');
-    Swal.fire("Logged Out", "Session security token terminated successfully.", "info");
+function triggerSecureLogout() {
+    Swal.fire({
+        title: "Confirm Log Out?",
+        text: "Are you sure you want to terminate your active shopping session?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc2626", 
+        cancelButtonColor: "#6b7280",  
+        confirmButtonText: "Yes, Log Me Out",
+        cancelButtonText: "Stay Logged In",
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.removeItem("currentUser");
+            currentUser = null;
+            Swal.fire({
+                title: "Logged Out",
+                text: "Your account session has been cleared safely.",
+                icon: "success",
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                updateAuthUI();
+                showSection('shop'); 
+            });
+        }
+    });
 }
-
-function updateAuthUI() {
-    const loginBtn = document.getElementById("loginNavBtn");
-    const userBadge = document.getElementById("userBadge");
-    const displayUsername = document.getElementById("displayUsername");
-    const userInitial = document.getElementById("userInitial");
-    const userStatus = document.getElementById("userStatus");
-    const ordersBtn = document.getElementById("ordersNavBtn");
-
-    const trackingBtn = document.getElementById('adminNavBtn');
-    if (trackingBtn) trackingBtn.remove();
-
-    if (currentUser) {
-        // 1. Hide the login button because they are logged in
-        loginBtn.style.display = "none";
-        
-        if (ordersBtn) ordersBtn.style.display = "inline-flex";
-        if (userBadge) {
-            userBadge.style.display = "flex";
-            // Updated to fallback on lowercase display_name setup
-            displayUsername.innerText = currentUser.display_name || currentUser.email.split('@')[0];
-            userInitial.innerText = currentUser.email[0].toUpperCase();
-            userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
-        }
-    } else {
-        // 2. When NO user is logged in, show the Login button normally
-        loginBtn.style.display = "inline-flex";
-        loginBtn.innerText = "Login";
-        loginBtn.style.background = "var(--secondary)"; // Restores original blue/purple look
-
-        if (ordersBtn) ordersBtn.style.display = "none";
-        if (userBadge) userBadge.style.display = "none";
-    } // <-- Closes the else block
-} // <-- Closes the updateAuthUI function        
-        // Ensure clicking it re-triggers your normal login popup modal
-        loginBtn.onclick = () => openAuthModal(); 
-
-        if (ordersBtn) ordersBtn.style.display = "none";
-        if (userBadge) userBadge.style.display = "none";
-     
-        
-        if (ordersBtn) ordersBtn.style.display = "inline-flex";
-        if (userBadge) {
-            userBadge.style.display = "flex";
-            // Updated to fallback on lowercase display_name setup
-            displayUsername.innerText = currentUser.display_name || currentUser.email.split('@')[0];
-            userInitial.innerText = currentUser.email[0].toUpperCase();
-            userStatus.innerText = currentUser.role === 'admin' ? "Admin Deck" : "Verified Buyer";
-        }
-
-        if (currentUser.role === 'admin') {
-            const adminBtn = document.createElement('button');
-            adminBtn.id = 'adminNavBtn';
-            adminBtn.className = 'btn-nav';
-            adminBtn.style.background = '#10b981';
-            adminBtn.innerText = '⚙️ Admin Deck';
-            adminBtn.onclick = () => showSection('admin');
-            document.getElementById('nav-auth-group').insertBefore(adminBtn, loginBtn);
-        }
-     else {
-        loginBtn.innerText = "Login / Register";
-        loginBtn.style.background = "var(--secondary)";
-        loginBtn.onclick = () => openModal('authModal');
-        
-        if (userBadge) userBadge.style.display = "none";
-        if (ordersBtn) BasinElement = "none";
-        if (ordersBtn) ordersBtn.style.display = "none";
-    }
-
 
 // ==========================================
-// 5. SETTINGS CONTROL ARCHITECTURE & SYNC
+// 7. SETTINGS PANEL MODULES
 // ==========================================
 function populateSettingsUI() {
     if (!currentUser) {
@@ -1461,7 +1456,6 @@ async function saveProfileSettings() {
     currentUser.phone = document.getElementById("settingsPhone").value.trim();
     
     try {
-        // Commit live structural changes upstream to Supabase users data record matrix safely
         const { error } = await _supabase
             .from('app_users')
             .update({ display_name: currentUser.display_name, phone: currentUser.phone })
@@ -1474,7 +1468,7 @@ async function saveProfileSettings() {
         localStorage.setItem("xpress_currency", document.getElementById("settingsCurrency").value);
         
         updateAuthUI(); 
-        Swal.fire("Profile Synchronized", "Configuration array context records committed cleanly to data layers.", "success");
+        Swal.fire("Profile Synchronized", "Configuration parameters stored cleanly.", "success");
     } catch (err) {
         Swal.fire("Profile Engine Failure", err.message, "error");
     }
@@ -1498,14 +1492,14 @@ function flushAppStorage() {
         confirmButtonText: "Confirm Global Overwrite"
     }).then((result) => {
         if (result.isConfirmed) {
-            // Clears browser local memory cleanly
             localStorage.clear();
             location.reload();
         }
     });
 }
+
 // ==========================================
-// 6. RENDERING & DATA FILTER CORES
+// 8. PRODUCT RENDERING MODULES
 // ==========================================
 function renderProducts(filter = 'all') {
     const grid = document.getElementById("products");
@@ -1518,7 +1512,7 @@ function renderProducts(filter = 'all') {
     const filtered = filter === 'all' ? allItems : allItems.filter(p => p.category.toLowerCase() === filter.toLowerCase());
 
     if(filtered.length === 0) {
-        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding: 40px; color:#64748b;">No items cataloged under this target selection marker matching context.</p>`;
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; padding: 40px; color:#64748b;">No items cataloged under this target category marker.</p>`;
         return;
     }
 
@@ -1595,7 +1589,7 @@ function quickView(id) {
 }
 
 // ==========================================
-// 7. TRANSACTION PROCESSING DATA PIPES
+// 9. TRANSACTION CHANNELS & BASKET ENGINES
 // ==========================================
 function addToCart(id) {
     const product = [...products, ...productPosts].find(p => p.id === id);
@@ -1615,7 +1609,7 @@ function addToCart(id) {
     
     localStorage.setItem("cart", JSON.stringify(cart));
     updateCartBadge();
-    Swal.fire("Added", "Product pushed safely into shopping session stack.", "success");
+    Swal.fire("Added", "Product pushed safely into shopping session.", "success");
 }
 
 function updateCartBadge() {
@@ -1637,7 +1631,7 @@ function renderCart() {
     cartItemsDiv.innerHTML = ""; 
 
     if (cart.length === 0) {
-        cartItemsDiv.innerHTML = "<div style='text-align:center; padding: 40px; color:#64748b;'>Your runtime shopping session index canvas array structure is bare.</div>";
+        cartItemsDiv.innerHTML = "<div style='text-align:center; padding: 40px; color:#64748b;'>Your shopping cart is currently empty.</div>";
         activeCoupon = null; 
         return;
     }
@@ -1673,7 +1667,7 @@ function renderCart() {
 
     const summary = document.createElement("div");
     summary.style = "margin-top: 20px; border-top: 2px solid #e2e8f0; padding-top: 20px; max-width:400px; margin-left:auto;";
-    const buttonText = currentUser ? "💳 Proceed to Direct Secure Checkout" : "🔓 Sign In Securely to Checkout";
+    const buttonText = currentUser ? "💳 Proceed to Checkout" : "🔓 Sign In to Checkout";
 
     summary.innerHTML = `
         <div style="display:flex; gap: 10px; margin-bottom: 15px;">
@@ -1699,10 +1693,10 @@ function renderCart() {
 }
 
 function startCheckout(calculatedTotal) {
-    if (cart.length === 0) return Swal.fire("Empty Stack", "Add structural objects target parameters first.", "warning");
+    if (cart.length === 0) return Swal.fire("Empty Cart", "Add products to your cart before checking out.", "warning");
     if (!currentUser) return openModal('authModal');
 
-    document.getElementById("paymentTotal").innerText = `Total Billing Frame Sum: ₦${calculatedTotal.toLocaleString()}`;
+    document.getElementById("paymentTotal").innerText = `Total Billing Sum: ₦${calculatedTotal.toLocaleString()}`;
     document.getElementById("paymentTotal").dataset.amount = calculatedTotal; 
     openModal('checkoutModal');
 }
@@ -1733,14 +1727,12 @@ async function processFinalOrder() {
     };
 
     try {
-        // Post transaction data structure to Supabase logs table
         const { error: orderError } = await _supabase
             .from('orders')
             .insert([newOrder]);
 
         if (orderError) throw orderError;
 
-        // Perform inventory delta decrement queries across active tables
         for (let cartItem of cart) {
             const matchedProduct = [...products, ...productPosts].find(p => p.id === cartItem.id);
             if (matchedProduct) {
@@ -1763,13 +1755,12 @@ async function processFinalOrder() {
         document.getElementById("paymentLoading").style.display = "none";
         document.getElementById("checkoutForm").reset();
 
-        // Refresh internal dynamic memory profiles
         await syncDataFromSupabase();
         renderProducts('all');
 
         Swal.fire({
             title: "Transaction Verified",
-            html: `Order record tracking logged manually inside global database architecture.<br><br><strong>Order Tracking Frame Link Key:</strong><br><span style="color:#2563eb; font-size:1.2rem;">${orderId}</span>`,
+            html: `Order tracking logs committed inside global database.<br><br><strong>Order Reference Key:</strong><br><span style="color:#2563eb; font-size:1.2rem;">${orderId}</span>`,
             icon: "success"
         });
         
@@ -1780,15 +1771,14 @@ async function processFinalOrder() {
 }
 
 // ==========================================
-// 8. LOGISTICS TRACKING MATRIX ENGINES
+// 10. LOGISTICS TRACKING MATRIX
 // ==========================================
 async function trackOrder() {
     const targetId = document.getElementById("orderIdInput").value.trim();
     const output = document.getElementById("trackResult");
-    if(!targetId) return Swal.fire("Context Guard", "Provide validation reference array indexes.", "warning");
+    if(!targetId) return Swal.fire("Required Fields", "Provide an order reference key to search.", "warning");
 
     try {
-        // Query database context nodes directly for live location parameters tracking profiles
         const { data: orderLookup, error } = await _supabase
             .from('orders')
             .select('*')
@@ -1797,7 +1787,7 @@ async function trackOrder() {
         if (error) throw error;
 
         if(!orderLookup || orderLookup.length === 0) {
-            output.innerHTML = `<p style="color:var(--danger); font-weight:600;">System directory configuration error matching key parameters: "${targetId}" mismatch frame structure.</p>`;
+            output.innerHTML = `<p style="color:var(--danger); font-weight:600;">No order matching reference ID: "${targetId}" found.</p>`;
             return;
         }
 
@@ -1823,7 +1813,7 @@ async function trackOrder() {
         output.innerHTML = `
             <div style="background:#f8fafc; border-left:4px solid var(--accent); padding:15px; border-radius:4px;">
                 <h4 style="color:var(--dark); margin-bottom:5px;">Package Identity Verified</h4>
-                <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Target Destination Node:</strong> ${record.shipping_address}</p>
+                <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Target Destination:</strong> ${record.shipping_address}</p>
                 <p style="font-size:0.9rem; margin-bottom:4px;"><strong>Log Registration:</strong> ${formattedDate}</p>
                 <p style="font-size:0.95rem; color:var(--accent); font-weight:700;"><strong>Operational State:</strong> ${liveIcon} ${liveStatus}</p>
             </div>
@@ -1834,7 +1824,7 @@ async function trackOrder() {
 }
 
 // ==========================================
-// 9. ADMIN PANEL & SELLER MANAGEMENT DECK
+// 11. ADMIN PANEL & SELLER CORES
 // ==========================================
 function renderAdminPanel() {
     const tbody = document.getElementById("adminTableBody");
@@ -1842,7 +1832,7 @@ function renderAdminPanel() {
     tbody.innerHTML = "";
 
     if(productPosts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No listing items present in storage blocks waiting parameters matching filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No marketplace listing items waiting processing review.</td></tr>`;
         return;
     }
 
@@ -1893,7 +1883,7 @@ document.getElementById("postForm").onsubmit = async function(event) {
         await syncDataFromSupabase();
         renderAdminPanel();
         
-        Swal.fire("Listing Complete", "Product package forwarded down tracking sequence processing streams awaiting administrative review checks.", "info");
+        Swal.fire("Listing Complete", "Product package forwarded awaiting administrative review checks.", "info");
     } catch (err) {
         Swal.fire("Listing Failed", err.message, "error");
     }
@@ -1913,14 +1903,14 @@ async function approvePost(positionalIndex) {
         await syncDataFromSupabase();
         renderAdminPanel();
         renderProducts('all');
-        Swal.fire("Verified System Push", "Listing configuration values updated live to runtime array targets.", "success");
+        Swal.fire("Verified Push", "Listing configuration values updated live.", "success");
     } catch (err) {
         Swal.fire("Update Collision Error", err.message, "error");
     }
 }
 
 // ==========================================
-// 10. SYSTEM MODAL BOX VISIBILITY INTERRUPTS
+// 12. SYSTEM MODALS CONTROL
 // ==========================================
 function openModal(targetModalIdentity) {
     const targetElement = document.getElementById(targetModalIdentity);
@@ -1930,95 +1920,6 @@ function closeModal(targetModalIdentity) {
     const targetElement = document.getElementById(targetModalIdentity);
     if(targetElement) targetElement.style.display = "none";
 }
-</script>
-<!-- Code injected by live-server -->
-<script>
-	// <![CDATA[  <-- For SVG support
-	if ('WebSocket' in window) {
-		(function () {
-			function refreshCSS() {
-				var sheets = [].slice.call(document.getElementsByTagName("link"));
-				var head = document.getElementsByTagName("head")[0];
-				for (var i = 0; i < sheets.length; ++i) {
-					var elem = sheets[i];
-					var parent = elem.parentElement || head;
-					parent.removeChild(elem);
-					var rel = elem.rel;
-					if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-						var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-						elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-					}
-					parent.appendChild(elem);
-				}
-			}
-			var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-			var address = protocol + window.location.host + window.location.pathname + '/ws';
-			var socket = new WebSocket(address);
-			socket.onmessage = function (msg) {
-				if (msg.data == 'reload') window.location.reload();
-				else if (msg.data == 'refreshcss') refreshCSS();
-			};
-			if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-				console.log('Live reload enabled.');
-				sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-			}
-		})();
-	}
-	else {
-		console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-	}
-	// ]]>
-   function toggleDropdownMenu(event) {
-    event.stopPropagation(); // Prevents instant bubbling close execution hooks
-    const menu = document.getElementById("navMenu");
-    const container = document.getElementById("navDropdownContainer");
-    
-    menu.classList.toggle("active");
-    container.classList.toggle("active-toggle");
-}
-
-// Global window event listener to hide the vertical menu instantly if a user clicks outside of it
-window.addEventListener("click", () => {
-    const menu = document.getElementById("navMenu");
-    const container = document.getElementById("navDropdownContainer");
-    
-    if (menu && menu.classList.contains("active")) {
-        menu.classList.remove("active");
-        container.classList.remove("active-toggle");
-    }
-});
-function triggerSecureLogout() {
-    Swal.fire({
-        title: "Confirm Log Out?",
-        text: "Are you sure you want to terminate your active shopping session?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#dc2626", // Red danger color
-        cancelButtonColor: "#6b7280",  // Muted gray
-        confirmButtonText: "Yes, Log Me Out",
-        cancelButtonText: "Stay Logged In",
-        reverseButtons: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Clear current user tracking variables
-            localStorage.removeItem("currentUser");
-            currentUser = null;
-
-            Swal.fire({
-                title: "Logged Out",
-                text: "Your account session has been cleared safely.",
-                icon: "success",
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                // Refresh layout elements or redirect back to shop home panel
-                if (typeof updateAuthUI === 'function') updateAuthUI();
-                showSection('shop'); 
-            });
-        }
-    });
-}
-
 </script>
 </body>
 </html>
